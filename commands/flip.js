@@ -3,6 +3,6 @@ module.exports = {
     description: 'flip a coin',
 
     execute(message, args){
-        message.reply('Fuck you, idiot!');
+        message.reply('lol');
     }
 }

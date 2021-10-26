@@ -2,9 +2,9 @@ const Discord = require('discord.js');
 
 const client = new Discord.Client();
 
-client.login('ODY4OTk0NjkzNDk5ODcxMjQy.YP3wYA.2ig2FQ41dj8LkkEJLrn2p3UtPbk');
+const config = require('./config.json');
 
-const prefix = '!';
+client.login(config.token);
 
 const fs = require('fs');
 
