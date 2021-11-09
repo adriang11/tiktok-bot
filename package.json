@@ -9,6 +9,13 @@
   "author": "Adrian",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^12.5.3"
-  }
+    "axios": "^0.24.0",
+    "discord-reply": "^0.1.2",
+    "discord.js": "^12.5.3",
+    "fetch": "^1.1.0"
+  },
+  "devDependencies": {
+    "node-fetch": "^3.0.0"
+  },
+  "type": "module"
 }
