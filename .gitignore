@@ -1,6 +1,6 @@
 config.json
 useful-code.js
 useful-links.txt
-node_modules
+node_modules/
 downloader-class.cjs
 heroku-logs.txt
