@@ -27,20 +27,22 @@ client.on('message', async message =>{
     
     const url = await element.getAttribute('src')
     
-    // if (fs.existsSync('output.mp4')) {
-    //     fs.unlinkSync('output.mp4');
-    // }
-    // const output = fs.createWriteStream('output.mp4');
+    if (fs.existsSync('output.mp4')) {  //temp file for video output
+        fs.unlinkSync('output.mp4');
+    }
+    const output = fs.createWriteStream('output.mp4');
     
     const res = await axios.get(url, {responseType: 'stream'}) //, adapter: httpAdapter
-    // const stream = response.data;
-    // stream.on('data', (chunk) => {                          // chunk is an ArrayBuffer
-    //     output.write(new Buffer.from(chunk));
-    //     });
-    // stream.on('end', () => {
-    //     output.end();
+    const stream = res.data;
+    
+    await stream.on('data', (chunk) => {                 // chunk is an ArrayBuffer
+        output.write(new Buffer.from(chunk));
+    });
+    await stream.on('end', () => {
+        output.end();
+    });
 
-    const attachment = new MessageAttachment(res.data)
+    const attachment = new MessageAttachment('\output.mp4');
 
     await message.lineReply("", attachment);  
 }    
