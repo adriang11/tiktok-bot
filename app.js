@@ -18,18 +18,30 @@ client.once('ready', () => {
     console.log('Ready to go!');
 })
 
-client.on('message', message =>{
+client.on('message', async message =>{
     if(!message.content.includes(".tiktok.com/") || message.author.bot) return;
     
-    driver.get(message.content);
-    driver.wait(webdriver.until.elementLocated(webdriver.By.xpath('/html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video')), 10000);
-    let element = driver.findElement(webdriver.By.xpath('/html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video'));
+    await driver.get(message.content);
+    await driver.wait(webdriver.until.elementLocated(webdriver.By.xpath('/html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video')), 10000);
+    let element = await driver.findElement(webdriver.By.xpath('/html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video'));
     
-    element.getAttribute('src')
-        .then(function(url){
-            //const attachment = new MessageAttachment(url)
+    const url = await element.getAttribute('src')
+    
+    // if (fs.existsSync('output.mp4')) {
+    //     fs.unlinkSync('output.mp4');
+    // }
+    // const output = fs.createWriteStream('output.mp4');
+    
+    const res = await axios.get(url, {responseType: 'stream'}) //, adapter: httpAdapter
+    // const stream = response.data;
+    // stream.on('data', (chunk) => {                          // chunk is an ArrayBuffer
+    //     output.write(new Buffer.from(chunk));
+    //     });
+    // stream.on('end', () => {
+    //     output.end();
 
-            message.lineReply(url); 
-        });
-}
+    const attachment = new MessageAttachment(res.data)
+
+    await message.lineReply("", attachment);  
+}    
 );
