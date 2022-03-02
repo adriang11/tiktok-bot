@@ -2,24 +2,20 @@
   "name": "adrian-tiktokbot",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node app.js"
   },
   "author": "Adrian",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.24.0",
-    "cheerio": "^1.0.0-rc.10",
     "discord-reply": "^0.1.2",
     "discord.js": "^12.5.3",
     "dotenv": "^16.0.0",
-    "fetch": "^1.1.0",
-    "node-fetch": "^3.2.0",
-    "request": "^2.88.2",
+    "express": "^4.17.3",
     "selenium": "^2.20.0",
-    "selenium-webdriver": "^4.1.1",
-    "user-agents": "^1.0.939"
+    "selenium-webdriver": "^4.1.1"
   }
 }
