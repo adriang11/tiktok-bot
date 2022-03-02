@@ -1,7 +1,3 @@
 .env
-useful-code.js
-useful-links.txt
-node_modules/
-downloader-class.cjs
-heroku-logs.txt
 output.mp4
+node_modules/

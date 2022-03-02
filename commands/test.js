@@ -1,3 +1,5 @@
+//currently unused
+
 module.exports = {
     name: 'test',
     description: 'send a tiktok link',
