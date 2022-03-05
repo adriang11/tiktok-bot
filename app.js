@@ -19,10 +19,11 @@ client.once('ready', () => {
 
 client.on('message', async message =>{
     if(!message.content.includes(".tiktok.com/") || message.author.bot) return;
-    
+    bot.user.setActivity('the fiddle', { type: 'PLAYING' })
+
     try {
         await driver.get(message.content);
-        await driver.wait(webdriver.until.elementLocated(webdriver.By.xpath('/html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video')), 100000);
+        await driver.wait(webdriver.until.elementLocated(webdriver.By.xpath('/html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video')), 10000);
         let element = await driver.findElement(webdriver.By.xpath('/html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video'));
         
         const url = await element.getAttribute('src')
@@ -36,7 +37,6 @@ client.on('message', async message =>{
         const stream = await res.data;
 
         await stream.on('data', (chunk) => {     // chunk is an ArrayBuffer
-            //var chunkLength = buf.length  //chunk size
             output.write(new Buffer.from(chunk));
         });
         await stream.on('end', () => {
@@ -44,19 +44,17 @@ client.on('message', async message =>{
             const attachment = new MessageAttachment('\output.mp4');
             message.lineReply("", attachment)
                 .catch((error)=>{
-                    console.log(error.name, error.message)
+                    console.log('Caught: ', error.name, error.message)
                     message.lineReply('Sorry. File is larger than Discord\'s 8MB Limitation.')
                 });
         });        
     }
     catch(error){
         if (error.name == 'TimeoutError') {
-            console.log('caught: ', error);
-            console.log('name: ', error.name);
+            console.log('Caught: ', error.name, error.message)
             message.lineReply("Connection Timeout: Please try again later");
           } else {
-            console.log('caught: ', error);
-            console.log('name: ', error.name);
+            console.log('Caught: ', error.name, error.message)
             message.lineReply("idk what happened lol");
           }
     }
