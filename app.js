@@ -19,7 +19,7 @@ client.once('ready', () => {
 
 client.on('message', async message =>{
     if(!message.content.includes(".tiktok.com/") || message.author.bot) return;
-    bot.user.setActivity('the fiddle', { type: 'PLAYING' })
+    //bot.user.setActivity('the fiddle', { type: 'PLAYING' })
 
     try {
         await driver.get(message.content);
