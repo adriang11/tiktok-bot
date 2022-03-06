@@ -4,12 +4,18 @@ const client = new Client();
 require('dotenv').config();
 require('discord-reply');
 var webdriver = require('selenium-webdriver');
-var driver = new webdriver.Builder().withCapabilities(webdriver.Capabilities.chrome()).build();
+const { Options, ServiceBuilder } = require('selenium-webdriver/chrome');
 const axios = require('axios');
 const fs = require('fs');
 
 //*[@id="app"]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video
 ///html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video
+
+let options = new Options();
+options.setChromeBinaryPath(process.env.CHROME_BINARY_PATH)
+options.addArguments('--headless');
+options.addArguments('--disable-gpu'); //Disables GPU hardware acceleration. If software renderer is not in place, then the GPU process won't launch.
+options.addArguments('--no-sandbox'); //Disables the sandbox. Google The sandbox is a development and test environment for developers working on Google Chrome browser-based applications. Disabling this to run on heroku
 
 client.login(process.env.TOKEN);
 
@@ -19,7 +25,9 @@ client.once('ready', () => {
 
 client.on('message', async message =>{
     if(!message.content.includes(".tiktok.com/") || message.author.bot) return;
-    //bot.user.setActivity('the fiddle', { type: 'PLAYING' })
+    
+    let serviceBuilder = new ServiceBuilder(process.env.CHROME_DRIVER_PATH)
+    var driver = new webdriver.Builder().withCapabilities(webdriver.Capabilities.chrome()).setChromeService(serviceBuilder).build();
 
     try {
         await driver.get(message.content);
@@ -51,12 +59,14 @@ client.on('message', async message =>{
     }
     catch(error){
         if (error.name == 'TimeoutError') {
-            console.log('Caught: ', error.name, error.message)
+            console.log('Caught: ', error.name, error)
             message.lineReply("Connection Timeout: Please try again later");
           } else {
             console.log('Caught: ', error.name, error.message)
             message.lineReply("idk what happened lol");
           }
+    } finally {
+        await driver.quit();
     }
 }    
 );
