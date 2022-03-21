@@ -52,7 +52,7 @@ client.on('message', async message =>{
         await stream.on('end', () => {
             output.end();
             const attachment = new MessageAttachment('\output.mp4');
-            message.lineReply("test:", attachment)
+            message.lineReply("", attachment)
                 .catch((error)=>{
                     console.log('Caught: ', error.name, error.message)
                     message.lineReply('Sorry. File is larger than Discord\'s 8MB Limitation.')
