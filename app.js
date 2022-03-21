@@ -33,7 +33,7 @@ client.on('message', async message =>{
 
     try {
         await driver.get(message.content);
-        await driver.wait(webdriver.until.elementLocated(webdriver.By.xpath('/html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video')), 50000);
+        await driver.wait(webdriver.until.elementLocated(webdriver.By.xpath('/html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video')), 20000);
         let element = await driver.findElement(webdriver.By.xpath('/html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video'));
         
         const url = await element.getAttribute('src')
@@ -52,7 +52,7 @@ client.on('message', async message =>{
         await stream.on('end', () => {
             output.end();
             const attachment = new MessageAttachment('\output.mp4');
-            message.lineReply("", attachment)
+            message.lineReply("test:", attachment)
                 .catch((error)=>{
                     console.log('Caught: ', error.name, error.message)
                     message.lineReply('Sorry. File is larger than Discord\'s 8MB Limitation.')
@@ -63,6 +63,9 @@ client.on('message', async message =>{
         if (error.name == 'TimeoutError') {
             console.log('Caught: ', error.name, error)
             message.lineReply("Connection Timeout: Please try again later");
+          } else if (error.name == 'NoSuchElementError') {
+            console.log('Caught: ', error.name, error)
+            message.lineReply("Element Not Found On Page");
           } else {
             console.log('Caught: ', error.name, error.message)
             message.lineReply("idk what happened lol");
