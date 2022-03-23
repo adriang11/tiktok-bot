@@ -17,5 +17,8 @@
     "express": "^4.17.3",
     "selenium": "^2.20.0",
     "selenium-webdriver": "^4.1.1"
+  },
+  "engines": {
+    "node": "17.7.1"
   }
 }
