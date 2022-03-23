@@ -14,9 +14,9 @@ const fs = require('fs');
 let options = new Options();
 options.setChromeBinaryPath(process.env.CHROME_BINARY_PATH)
 options.addArguments('--headless');
-options.addArguments('--disable-gpu'); //Disables GPU hardware acceleration. If software renderer is not in place, then the GPU process won't launch.
-options.addArguments('--no-sandbox'); //Disables the sandbox. Google The sandbox is a development and test environment for developers working on Google Chrome browser-based applications. Disabling this to run on heroku
-options.addArguments('--disable-dev-shm-usage'); //This will force Chrome to use the /tmp directory instead. Fixing issue with tab crashing due to Heroku attempting to always use /dev/shm for non-executable memory.
+//options.addArguments('--disable-gpu'); //Disables GPU hardware acceleration. If software renderer is not in place, then the GPU process won't launch.
+//options.addArguments('--no-sandbox'); //Disables the sandbox. Google The sandbox is a development and test environment for developers working on Google Chrome browser-based applications. Disabling this to run on heroku
+//options.addArguments('--disable-dev-shm-usage'); //This will force Chrome to use the /tmp directory instead. Fixing issue with tab crashing due to Heroku attempting to always use /dev/shm for non-executable memory.
 
 client.login(process.env.TOKEN);
 
@@ -53,7 +53,7 @@ client.on('message', async message =>{
         await stream.on('end', () => {
             output.end();
             const attachment = new MessageAttachment('\output.mp4');
-            message.lineReply("", attachment)
+            message.lineReply("testing:", attachment)
                 .catch((error)=>{
                     console.log('Caught: ', error.name, error.message)
                     message.lineReply('Sorry. File is larger than Discord\'s 8MB Limitation.')
