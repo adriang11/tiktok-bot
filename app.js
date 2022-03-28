@@ -27,7 +27,7 @@ client.once('ready', () => {
 client.on('message', async message =>{
     if(!message.content.includes(".tiktok.com/") || message.author.bot) return;
     
-    client.user.setActivity({ type: "PLAYING", name: `a game` })
+    client.user.setStatus("Testing Sorry")
 
     let serviceBuilder = new ServiceBuilder(process.env.CHROME_DRIVER_PATH)
     var driver = new webdriver.Builder().withCapabilities(webdriver.Capabilities.chrome()).setChromeService(serviceBuilder).build();
@@ -69,7 +69,7 @@ client.on('message', async message =>{
             message.lineReply("Element Not Found On Page");
           } else {
             console.log('Caught: ', error.name, error.message)
-            message.lineReply("idk what happened lol");
+            message.lineReply(error);
           }
     } finally {
         await driver.quit();
