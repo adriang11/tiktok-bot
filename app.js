@@ -56,7 +56,7 @@ client.on('message', async message =>{
             message.lineReply("", attachment)
                 .catch((error)=>{
                     console.log('Caught: ', error.name, error.message)
-                    message.lineReply('Sorry. File is larger than Discord\'s 8MB Limitation.')
+                    message.lineReply("Sorry. File is larger than Discord's 8MB Limitation.")
                 });
         });        
     }
@@ -69,7 +69,7 @@ client.on('message', async message =>{
             message.lineReply("Element Not Found On Page");
           } else {
             console.log('Caught: ', error.name, error.message)
-            message.lineReply(error);
+            message.lineReply(error.toString());
           }
     } finally {
         await driver.quit();
