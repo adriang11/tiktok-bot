@@ -12,10 +12,11 @@ const fs = require('fs');
 ///html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video
 
 let options = new Options();
-options.setChromeBinaryPath(process.env.CHROME_BINARY_PATH)
-options.addArguments('--headless');
-options.addArguments('--disable-gpu'); //Disables GPU hardware acceleration. If software renderer is not in place, then the GPU process won't launch.
-options.addArguments('--no-sandbox'); //Disables the sandbox. Google The sandbox is a development and test environment for developers working on Google Chrome browser-based applications. Disabling this to run on heroku
+options.headless()
+//options.setChromeBinaryPath(process.env.CHROME_BINARY_PATH)
+// options.addArguments('--headless');
+// options.addArguments('--disable-gpu'); //Disables GPU hardware acceleration. If software renderer is not in place, then the GPU process won't launch.
+// options.addArguments('--no-sandbox'); //Disables the sandbox. The Google sandbox is a development and test environment for developers working on Google Chrome browser-based applications. Disabling this to run on heroku
 options.addArguments('--disable-dev-shm-usage'); //This will force Chrome to use the /tmp directory instead. Fixing issue with tab crashing due to Heroku attempting to always use /dev/shm for non-executable memory.
 
 client.login(process.env.TOKEN);
@@ -30,7 +31,7 @@ client.on('message', async message =>{
     client.user.setStatus("Testing Sorry")
 
     let serviceBuilder = new ServiceBuilder(process.env.CHROME_DRIVER_PATH)
-    var driver = new webdriver.Builder().withCapabilities(webdriver.Capabilities.chrome()).setChromeService(serviceBuilder).build();
+    let driver = new webdriver.Builder().setChromeOptions(options).withCapabilities(webdriver.Capabilities.chrome()).setChromeService(serviceBuilder).build();
 
     try {
         await driver.get(message.content);
