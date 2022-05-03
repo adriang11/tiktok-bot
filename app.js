@@ -13,7 +13,7 @@ const fs = require('fs');
 
 let options = new Options();
 options.headless()
-options.setChromeBinaryPath(process.env.CHROME_BINARY_PATH)
+// options.setChromeBinaryPath(process.env.CHROME_BINARY_PATH)
 // options.addArguments('--headless');
 options.addArguments('--disable-gpu'); //Disables GPU hardware acceleration. If software renderer is not in place, then the GPU process won't launch.
 options.addArguments('--no-sandbox'); //Disables the sandbox. The Google sandbox is a development and test environment for developers working on Google Chrome browser-based applications. Disabling this to run on heroku
@@ -73,7 +73,7 @@ client.on('message', async message =>{
             message.lineReply("Element Not Found On Page");
           } else {
             console.log('Caught: ', error.name, error.message)
-            message.lineReply(error.toString());
+            message.lineReply(error.message.toString());
           }
     } finally {
         await driver.quit();
