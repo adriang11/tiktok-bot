@@ -34,10 +34,7 @@ client.on('message', async message =>{
 
     try {
         await driver.get(message.content);
-        await driver.wait(webdriver.until.elementLocated(webdriver.By.xpath('//*[@id="app"]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video')), 20000)
-            .catch((error)=>{
-                console.log('Caught: ', error.name, error.message)
-                message.lineReply("Video not found on page")});
+        await driver.wait(webdriver.until.elementLocated(webdriver.By.xpath('//*[@id="app"]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video')), 20000);
         let element = await driver.findElement(webdriver.By.xpath('//*[@id="app"]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video'));
         
         const url = await element.getAttribute('src')

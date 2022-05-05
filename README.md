@@ -6,5 +6,5 @@ Dependencies: Node.js, Selenium Webdriver, Axios, discord.js, discord-reply
 
 ## How does it work?
 Uses Selenium WebDriver's headless browser to extract data from the given link.
-Makes an GET request with Axios on the URL of the video (found in the src tag of the HTML), streams the response to a file, and sends the file in chat on Discord.
+Makes a get request with Axios on the URL of the video (found in the src tag of the HTML), streams the response to a file, and sends the file in chat on Discord.
 Additionally interfaces with Heroku to host the bot 24/7 on the cloud.
