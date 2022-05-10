@@ -8,8 +8,7 @@ const { Options, ServiceBuilder } = require('selenium-webdriver/chrome');
 const axios = require('axios');
 const fs = require('fs');
 
-//*[@id="app"]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video
-///html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video
+//Rel XPath: *[@id="app"]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video
 
 let options = new Options();
 options.headless()
