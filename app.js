@@ -25,7 +25,7 @@ client.once('ready', () => {
 })
 
 client.on('message', async message =>{
-    client.user.setActivity('tiktoks', {type:'WATCHING'})
+    client.user.setActivity('Rohan', {type:'WATCHING'})
     
     if(!message.content.includes(".tiktok.com/") || message.author.bot) return;
 
@@ -34,8 +34,8 @@ client.on('message', async message =>{
 
     try {
         await driver.get(message.content);
-        await driver.wait(webdriver.until.elementLocated(webdriver.By.xpath('//*[@id="app"]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video')), 20000);
-        let element = await driver.findElement(webdriver.By.xpath('//*[@id="app"]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video'));
+        await driver.wait(webdriver.until.elementLocated(webdriver.By.css('video')), 20000);
+        let element = await driver.findElement(webdriver.By.css('video'));
         
         const url = await element.getAttribute('src')
         
