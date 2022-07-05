@@ -24,7 +24,7 @@ client.once('ready', () => {
 })
 
 client.on('message', async message =>{
-    client.user.setActivity('Rohan', {type:'WATCHING'})
+    client.user.setActivity('tiktoks', {type:'WATCHING'})
     
     if(!message.content.includes(".tiktok.com/") || message.author.bot) return;
 
