@@ -34,38 +34,52 @@ client.on('message', async message =>{
     let driver = new webdriver.Builder().setChromeOptions(options).withCapabilities(webdriver.Capabilities.chrome()).setChromeService(serviceBuilder).build();
 
     try {
-        await driver.get(message.content);
-        await driver.wait(webdriver.until.elementLocated(webdriver.By.css('video')), 20000);
+        await driver.get(message.content); 
+
         let element = await driver.findElement(webdriver.By.css('video'));
-        
-        const url = await element.getAttribute('src')
-        
-        if (fs.existsSync('output.mp4')) {  //temp file for video output
-            fs.unlinkSync('output.mp4');
-        }
-        const output = fs.createWriteStream('output.mp4');
 
-        const headers = { 
-            'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-            'responseType':'stream'
-        }
+        await driver.actions().contextClick(element);
         
-        const res = await axios.get(url, { headers }) //, adapter: httpAdapter
-        
-        const stream = await res.data;
+        let dl = await driver.findElement(webdriver.By.linkText('Download video'));
 
-        await stream.on('data', (chunk) => {     // chunk is an ArrayBuffer
-            output.write(new Buffer.from(chunk));
-        });
-        await stream.on('end', () => {
-            output.end();
-            const attachment = new MessageAttachment('\output.mp4');
-            message.lineReply("", attachment)
-                .catch((error)=>{
-                    console.log('Caught: ', error.name, error.message)
-                    message.lineReply("Sorry. File is larger than Discord's 8MB Limitation.")
-                });
-        });        
+        await driver.actions().click(dl);
+
+    //    ""
+        
+    //     'tiktok-saih3w-UlPopupContainer e5bhsb10'
+
+
+        // await driver.wait(webdriver.until.elementLocated(webdriver.By.css('video')), 20000);
+        // let element = await driver.findElement(webdriver.By.css('video'));
+        
+        // const url = await element.getAttribute('src')
+        
+        // if (fs.existsSync('output.mp4')) {  //temp file for video output
+        //     fs.unlinkSync('output.mp4');
+        // }
+        // const output = fs.createWriteStream('output.mp4');
+
+        // const headers = { 
+        //     'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+        //     'responseType':'stream'
+        // }
+        
+        // const res = await axios.get(url, { headers }) //, adapter: httpAdapter
+        
+        // const stream = await res.data;
+
+        // await stream.on('data', (chunk) => {     // chunk is an ArrayBuffer
+        //     output.write(new Buffer.from(chunk));
+        // });
+        // await stream.on('end', () => {
+        //     output.end();
+        //     const attachment = new MessageAttachment('\output.mp4');
+        //     message.lineReply("", attachment)
+        //         .catch((error)=>{
+        //             console.log('Caught: ', error.name, error.message)
+        //             message.lineReply("Sorry. File is larger than Discord's 8MB Limitation.")
+        //         });
+        // });        
     }
     catch(error){
         if (error.name == 'TimeoutError') {
