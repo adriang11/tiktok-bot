@@ -12,7 +12,7 @@ const fs = require('fs');
 ///html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video
 
 let options = new Options();
-options.headless()
+// options.headless()
 options.setChromeBinaryPath(process.env.CHROME_BINARY_PATH)
 options.addArguments('--disable-web-security')
 // options.addArguments('--disable-dev-shm-usage'); //This will force Chrome to use the /tmp directory instead. Fixing issue with tab crashing due to Heroku attempting to always use /dev/shm for non-executable memory.
@@ -45,7 +45,13 @@ client.on('message', async message =>{
         }
         const output = fs.createWriteStream('output.mp4');
 
-        const res = await axios.get(url, {responseType: 'stream'}) //, adapter: httpAdapter
+        const headers = { 
+            'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+            'responseType':'stream'
+        }
+        
+        const res = await axios.get(url, { headers }) //, adapter: httpAdapter
+        
         const stream = await res.data;
 
         await stream.on('data', (chunk) => {     // chunk is an ArrayBuffer
@@ -69,7 +75,7 @@ client.on('message', async message =>{
             console.log('Caught: ', error.name, error)
             message.lineReply("Element Not Found On Page");
           } else {
-            console.log('Caught: ', error.name, error.message)
+            console.log('Caught: ', error.name, error)
             message.lineReply(error.toString());
           }
     } finally {
