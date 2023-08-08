@@ -79,7 +79,7 @@ client.on('message', async message =>{
             message.lineReply(error.toString());
           }
     } finally {
-        await driver.quit();
+        driver.quit();
     }
 }    
 );
