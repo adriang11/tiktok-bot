@@ -29,6 +29,7 @@ class MyClient(discord.Client):
             return
 
         service = Service(executable_path=CHROME_DRIVER_PATH)
+
         options = webdriver.ChromeOptions()
         options.add_argument('--headless=new')
 
@@ -54,17 +55,21 @@ class MyClient(discord.Client):
 
             r = requests.get(url, cookies=cookies, headers=headers)
             
+            if os.path.exists('output.mp4'):
+                os.remove('output.mp4')
+
             if r.status_code == 200:
                 with open('output.mp4', 'wb') as f:
                     f.write(r.content)
                 print('downloaded')
                 await message.reply(file=discord.File('output.mp4'))
+                print('sent')
                 os.remove('output.mp4')
             else:
                 print(r.status_code, '\n')
                 await message.reply(content=('Error: ' + r.status_code), mention_author=True)
 
-            time.sleep(10)
+            # time.sleep(10)
 
         except Exception as e:
             print('oopsies\n', e)
