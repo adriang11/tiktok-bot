@@ -8,16 +8,15 @@ const { Options, ServiceBuilder } = require('selenium-webdriver/chrome');
 const axios = require('axios');
 const fs = require('fs');
 
-//*[@id="app"]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video
-///html/body/div[2]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video
+//Rel XPath: *[@id="app"]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video
 
 let options = new Options();
-// options.headless()
+
+options.headless()
 options.setChromeBinaryPath(process.env.CHROME_BINARY_PATH)
-options.addArguments('--disable-web-security')
-// options.addArguments('--disable-dev-shm-usage'); //This will force Chrome to use the /tmp directory instead. Fixing issue with tab crashing due to Heroku attempting to always use /dev/shm for non-executable memory.
-// options.addArguments('--disable-gpu'); //Disables GPU hardware acceleration. If software renderer is not in place, then the GPU process won't launch.
+options.addArguments('--disable-gpu'); //Disables GPU hardware acceleration. If software renderer is not in place, then the GPU process won't launch.
 options.addArguments('--no-sandbox'); //Disables the sandbox. The Google sandbox is a development and test environment for developers working on Google Chrome browser-based applications. Disabling this to run on heroku
+options.addArguments('--disable-dev-shm-usage'); //This will force Chrome to use the /tmp directory instead. Fixing issue with tab crashing due to Heroku attempting to always use /dev/shm for non-executable memory.
 
 client.login(process.env.TOKEN);
 
@@ -75,8 +74,10 @@ client.on('message', async message =>{
             console.log('Caught: ', error.name, error)
             message.lineReply("Element Not Found On Page");
           } else {
-            console.log('Caught: ', error.name, error)
-            message.lineReply(error.toString());
+
+            console.log('Caught: ', error.name, error.message)
+            message.lineReply('Unknown Error Occured. Details: ', error.name);
+
           }
     } finally {
         driver.quit();
