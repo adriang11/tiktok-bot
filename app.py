@@ -1,0 +1,107 @@
+import os
+import discord
+import time
+import traceback
+import requests
+from discord import app_commands
+from dotenv import load_dotenv
+from selenium import webdriver
+from selenium.webdriver import ActionChains
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchElementException
+
+
+load_dotenv()
+TOKEN = os.getenv('TOKEN')
+CHROME_DRIVER_PATH = os.getenv('CHROME_DRIVER_PATH')
+
+class MyClient(discord.Client):
+    async def on_ready(self):
+        print(f'{client.user} is Ready to go!!')
+        # await tree.sync(guild=discord.Object(id=Your guild id))
+        await self.change_presence(activity=discord.Game(name="League of Legends"))
+        dungeon = client.get_channel(1149980884523556915)
+        ducklings = client.get_channel(915088526129909842)
+        await dungeon.send('I am alive and capable of feeling.')
+        # await ducklings.send('I am alive and capable of feeling.')
+
+    async def on_message(self, message):
+        if message.author.id == self.user.id:
+            return
+        
+        if '.tiktok.com/' not in message.content:
+            return
+
+        service = Service(executable_path=CHROME_DRIVER_PATH)
+
+        options = webdriver.ChromeOptions()
+        options.add_argument('--headless=new')
+
+        try:
+            # initialize the Selenium WebDriver
+            driver = webdriver.Chrome(service=service, options=options)
+
+            driver.get(message.content)
+            print(f'[DEBUG TRACE] tiktok link: {message.content}\n')
+            element = driver.find_element(By.TAG_NAME, 'video')
+            url = element.get_attribute('src')
+
+            all_cookies = driver.get_cookies()
+            cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
+
+            headers = {
+                'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36', 
+                'Accept-Language':'en-US,en;q=0.9', 
+                'Accept-Encoding':'gzip, deflate, br',
+                'Accept':'text/html,application/x-protobuf,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Referer':'https://www.tiktok.com/'
+                }
+
+            r = requests.get(url, cookies=cookies, headers=headers)
+            
+            if os.path.exists('output.mp4'):
+                os.remove('output.mp4')
+                print('[DEBUG TRACE] file removed\n')
+
+            if r.status_code == 200:
+                with open('output.mp4', 'wb') as f:
+                    f.write(r.content)
+                print('[DEBUG TRACE] video downloaded\n')
+                
+                # await message.reply('[DEBUG TRACE]\nThis message is used to aid in the process of debugging \nIf you\'re seeing this, thats tuff. \nHowever, your video should arrive shortly \nAnd if it doesn\'t, that\'s tuff')
+
+                await message.reply(file=discord.File('output.mp4'))
+                print('[DEBUG TRACE] video sent\n')
+                os.remove('output.mp4')
+            else:
+                print(r.status_code, '\n')
+                await message.reply(content=('Status Code Error: ' + r.status_code), mention_author=True)
+
+            # time.sleep(10)
+        except WindowsError as e:
+            print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
+            await message.reply('The bot is currently feeling a little overstimulated rn. Please try again in a few minutes.')
+        except NoSuchElementException as e:
+            print('[DEBUG TRACE] NoSuchElement caught: ', e, '\n')
+            await message.reply('The bot currently does not support tiktok slideshows. Cry about it tbh')
+        except Exception as e:
+            print('oopsies\n')
+            traceback.print_exc()
+            await message.reply(content=('Error: ' + str(e)), mention_author=True)
+        finally:
+            driver.quit()
+    
+    # @tree.command(name = "commandname", description = "My first application Command", guild=discord.Object(id=12417128931)) #Add the guild ids in which the slash command will appear. If it should be in all, remove the argument, but note that it will take some time (up to an hour) to register the command if it's for all guilds.
+    # async def first_command(interaction):
+    #     await interaction.response.send_message("Hello!")
+
+intents = discord.Intents.default()
+intents.message_content = True
+client = MyClient(intents=intents)
+# tree = app_commands.CommandTree(client)
+
+client.run(TOKEN)
+
+

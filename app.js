@@ -11,6 +11,7 @@ const fs = require('fs');
 //Rel XPath: *[@id="app"]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]/div/div[1]/div/video
 
 let options = new Options();
+
 options.headless()
 options.setChromeBinaryPath(process.env.CHROME_BINARY_PATH)
 options.addArguments('--disable-gpu'); //Disables GPU hardware acceleration. If software renderer is not in place, then the GPU process won't launch.
@@ -43,7 +44,13 @@ client.on('message', async message =>{
         }
         const output = fs.createWriteStream('output.mp4');
 
-        const res = await axios.get(url, {responseType: 'stream'}) //, adapter: httpAdapter
+        const headers = { 
+            'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+            'responseType':'stream'
+        }
+        
+        const res = await axios.get(url, { headers }) //, adapter: httpAdapter
+        
         const stream = await res.data;
 
         await stream.on('data', (chunk) => {     // chunk is an ArrayBuffer
@@ -67,11 +74,13 @@ client.on('message', async message =>{
             console.log('Caught: ', error.name, error)
             message.lineReply("Element Not Found On Page");
           } else {
+
             console.log('Caught: ', error.name, error.message)
             message.lineReply('Unknown Error Occured. Details: ', error.name);
+
           }
     } finally {
-        await driver.quit();
+        driver.quit();
     }
 }    
 );
