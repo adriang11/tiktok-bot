@@ -1,6 +1,7 @@
 import os
 import discord
 import time
+import traceback
 import requests
 from discord import app_commands
 from dotenv import load_dotenv
@@ -9,6 +10,7 @@ from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchElementException
 
 
 load_dotenv()
@@ -80,9 +82,13 @@ class MyClient(discord.Client):
             # time.sleep(10)
         except WindowsError as e:
             print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-            await message.reply(e)
+            await message.reply('The bot is currently feeling a little overstimulated rn. Please try again in a few minutes.')
+        except NoSuchElementException as e:
+            print('[DEBUG TRACE] NoSuchElement caught: ', e, '\n')
+            await message.reply('The bot currently does not support tiktok slideshows. Cry about it tbh')
         except Exception as e:
-            print('oopsies\n', e)
+            print('oopsies\n')
+            traceback.print_exc()
             await message.reply(content=('Error: ' + str(e)), mention_author=True)
         finally:
             driver.quit()
