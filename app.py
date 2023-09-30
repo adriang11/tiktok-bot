@@ -10,8 +10,11 @@ from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
-
+from selenium.common.exceptions import SessionNotCreatedException
+from selenium.common.exceptions import TimeoutException
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
@@ -24,7 +27,7 @@ class MyClient(discord.Client):
         await self.change_presence(activity=discord.Game(name="League of Legends"))
         dungeon = client.get_channel(1149980884523556915)
         ducklings = client.get_channel(915088526129909842)
-        await dungeon.send('I am alive and capable of feeling.')
+        # await dungeon.send('I am alive and capable of feeling.')
         # await ducklings.send('I am alive and capable of feeling.')
 
     async def on_message(self, message):
@@ -45,8 +48,17 @@ class MyClient(discord.Client):
 
             driver.get(message.content)
             print(f'[DEBUG TRACE] tiktok link: {message.content}\n')
+
+            # allow page load before continuing (better fix in progress)
+            time.sleep(3)
+            
+            # wait = WebDriverWait(driver, 3)
+            # element = wait.until(EC.element_to_be_clickable((By.TAG_NAME, 'video')))
             element = driver.find_element(By.TAG_NAME, 'video')
+            print('[DEBUG TRACE] element found\n')
+            
             url = element.get_attribute('src')
+            # print('[DEBUG TRACE] src link: ', url, '\n')
 
             all_cookies = driver.get_cookies()
             cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
@@ -69,23 +81,41 @@ class MyClient(discord.Client):
                 with open('output.mp4', 'wb') as f:
                     f.write(r.content)
                 print('[DEBUG TRACE] video downloaded\n')
-                
-                # await message.reply('[DEBUG TRACE]\nThis message is used to aid in the process of debugging \nIf you\'re seeing this, thats tuff. \nHowever, your video should arrive shortly \nAnd if it doesn\'t, that\'s tuff')
 
-                await message.reply(file=discord.File('output.mp4'))
-                print('[DEBUG TRACE] video sent\n')
-                os.remove('output.mp4')
+                # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
+                # os.system("ffmpeg.exe -v error -i output.mp4 -f null - >error.log 2>&1")
+                os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
+                log_file = open("log.txt","r")
+                log_file_content = log_file.read()
+                print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+
+                if 'h264' not in log_file_content:
+                    os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
+                    await message.reply(file=discord.File('output1.mp4'))
+                    print('[DEBUG TRACE] file sent, crisis averted\n')
+                    os.remove('output.mp4')
+                    os.remove('output1.mp4')
+                else:
+                    await message.reply(file=discord.File('output.mp4'))
+                    print('[DEBUG TRACE] file sent\n')
+                    os.remove('output.mp4')
             else:
                 print(r.status_code, '\n')
-                await message.reply(content=('Status Code Error: ' + r.status_code), mention_author=True)
+                await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, we lost)'), mention_author=True)
 
-            # time.sleep(10)
+            # time.sleep(30)
         except WindowsError as e:
-            print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
+            print('[DEBUG TRACE] WindowsError caught: ', e.strerror, '\n')
             await message.reply('The bot is currently feeling a little overstimulated rn. Please try again in a few minutes.')
+        except TimeoutException as e:
+            print('[DEBUG TRACE] NoSuchElement caught: ', e, '\n')
+            await message.reply('The bot currently does not support tiktok slideshows. Cry about it tbh')
         except NoSuchElementException as e:
             print('[DEBUG TRACE] NoSuchElement caught: ', e, '\n')
             await message.reply('The bot currently does not support tiktok slideshows. Cry about it tbh')
+        except SessionNotCreatedException as e:
+            print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
+            await message.reply('[ERROR] Session not created: please notify Adrian to update Chromedriver')
         except Exception as e:
             print('oopsies\n')
             traceback.print_exc()
