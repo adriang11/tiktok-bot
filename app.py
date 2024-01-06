@@ -2,6 +2,7 @@ import os
 import discord
 import time
 import traceback
+import random
 import requests
 from discord import app_commands
 from dotenv import load_dotenv
@@ -21,14 +22,23 @@ TOKEN = os.getenv('TOKEN')
 CHROME_DRIVER_PATH = os.getenv('CHROME_DRIVER_PATH')
 
 class MyClient(discord.Client):
+    def __init__(self, *, intents: discord.Intents):
+        super().__init__(intents=intents)
+        self.synced = False
+        self.tree = app_commands.CommandTree(self)
+    
     async def on_ready(self):
-        print(f'{client.user} is Ready to go!!')
-        # await tree.sync(guild=discord.Object(id=Your guild id))
+        await self.wait_until_ready()
+        if  not self.synced:
+            await self.tree.sync()
+            self.synced = True
+
         await self.change_presence(activity=discord.Game(name="League of Legends"))
         dungeon = client.get_channel(1149980884523556915)
         ducklings = client.get_channel(915088526129909842)
         # await dungeon.send('I am alive and capable of feeling.')
         # await ducklings.send('I am alive and capable of feeling.')
+        print(f'{client.user} is Ready to go!!')
 
     async def on_message(self, message):
         if message.author.id == self.user.id:
@@ -122,15 +132,23 @@ class MyClient(discord.Client):
             await message.reply(content=('Error: ' + str(e)), mention_author=True)
         finally:
             driver.quit()
-    
-    # @tree.command(name = "commandname", description = "My first application Command", guild=discord.Object(id=12417128931)) #Add the guild ids in which the slash command will appear. If it should be in all, remove the argument, but note that it will take some time (up to an hour) to register the command if it's for all guilds.
-    # async def first_command(interaction):
-    #     await interaction.response.send_message("Hello!")
 
 intents = discord.Intents.default()
 intents.message_content = True
 client = MyClient(intents=intents)
-# tree = app_commands.CommandTree(client)
+
+@client.tree.command(name = "test", description = "Says 'yo'. Nothing else") 
+async def test_command(interaction: discord.Interaction):
+    await interaction.response.send_message("yo")
+
+@client.tree.command(name = "wisdom", description = "Receive a random wisdom from Pascal the Sea Otter") 
+async def daily_wisdom(interaction: discord.Interaction):
+    fd = open("wisdom.txt", "r")
+    lines = fd.readlines()
+    wisdom = random.choice(lines)
+    fd.close()
+    print("Wisdom sent: ", wisdom)
+    await interaction.response.send_message(wisdom)
 
 client.run(TOKEN)
 
