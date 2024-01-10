@@ -16,6 +16,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import TimeoutException
+from typing import Optional
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
@@ -35,8 +36,10 @@ class MyClient(discord.Client):
 
         await self.change_presence(activity=discord.Game(name="League of Legends"))
         dungeon = client.get_channel(1149980884523556915)
+        degens = client.get_channel(1045937547597053982)
         ducklings = client.get_channel(915088526129909842)
         # await dungeon.send('I am alive and capable of feeling.')
+        # await degens.send('I am alive and capable of feeling.')
         # await ducklings.send('I am alive and capable of feeling.')
         print(f'{client.user} is Ready to go!!')
 
@@ -149,6 +152,26 @@ async def daily_wisdom(interaction: discord.Interaction):
     fd.close()
     print("Wisdom sent: ", wisdom)
     await interaction.response.send_message(wisdom)
+
+@client.tree.command(name = "poll", description = "Creates a poll") 
+async def test_command(interaction: discord.Interaction, message: str, choice1: str, choice2: str, choice3: Optional[str], choice4: Optional[str], choice5: Optional[str], choice6: Optional[str], choice7: Optional[str], choice8: Optional[str], choice9: Optional[str], choice10: Optional[str]):
+    
+    
+    emojis = ['1️⃣','2️⃣']
+    options = [choice1, choice2]
+    
+    for i in range(len(options)):
+        options[i] = f"{emojis[i]} {options[i]} \n"
+    options = '\n'.join(options)
+
+    embed = discord.Embed(title=message, description=options, color=0x13a6f0)
+
+    embed.set_footer(text="Poll created by somebody in the server xd")
+    
+    await interaction.response.send_message(embed=embed)
+    sent = await interaction.original_response()
+    for emoji in emojis:
+        await sent.add_reaction(emoji)
 
 client.run(TOKEN)
 
