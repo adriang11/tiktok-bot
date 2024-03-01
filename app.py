@@ -56,11 +56,21 @@ class MyClient(discord.Client):
         options.add_argument('--headless=new')
 
         try:
+            # strip link from message if appicable
+            link = message.content
+            print(f'[DEBUG TRACE] message detected: {link}\n')
+
+            lst = link.split(' ')
+            for word in lst:
+                if '.tiktok.com/' in word:
+                    link = word
+
+            print(f'[DEBUG TRACE] extracted link: {link}\n')
+
             # initialize the Selenium WebDriver
             driver = webdriver.Chrome(service=service, options=options)
 
-            driver.get(message.content)
-            print(f'[DEBUG TRACE] tiktok link: {message.content}\n')
+            driver.get(link)
 
             # allow page load before continuing (better fix in progress)
             time.sleep(3)
@@ -130,9 +140,13 @@ class MyClient(discord.Client):
             print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
             await message.reply('[ERROR] Session not created: please notify Adrian to update Chromedriver')
         except Exception as e:
-            print('oopsies\n')
-            traceback.print_exc()
-            await message.reply(content=('Error: ' + str(e)), mention_author=True)
+            if e.__class__ is discord.errors.HTTPException:
+                print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
+                await message.reply(content=('Error: File too large. Maybe stop sending 12 minute tiktoks?'), mention_author=True)
+            else:
+                print('oopsies\n')
+                traceback.print_exc()
+                await message.reply(content=('Error: Unknown Error Occured. Please ping Adrian'), mention_author=True)
         finally:
             driver.quit()
 

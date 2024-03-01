@@ -12,6 +12,7 @@ Additionally interfaces with Heroku to host the bot 24/7 on the cloud.
 ## Required Permissions
 - Read Messages/View Channels
 - Send Messages
+- Send Messages in Threads
 - Attach Files
 - Read Message History
 - Add Reactions
