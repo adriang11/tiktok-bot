@@ -17,3 +17,9 @@ Additionally interfaces with Heroku to host the bot 24/7 on the cloud.
 - Read Message History
 - Add Reactions
 - Use Slash Commands
+
+## A Word About ChromeDriver
+This bot uses Selenium that makes use of Chromedriver for Chrome to automate testing of websites.
+When running this project locally, the installed version of Chromedriver should be in sync with the version of Chrome you are using.
+You can find the latest stable builds  
+https://googlechromelabs.github.io/chrome-for-testing/

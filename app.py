@@ -160,7 +160,25 @@ async def test_command(interaction: discord.Interaction):
 
 @client.tree.command(name = "wisdom", description = "Receive a random wisdom from Pascal the Sea Otter") 
 async def daily_wisdom(interaction: discord.Interaction):
-    fd = open("wisdom.txt", "r")
+    fd = open("wisdom.txt", "r", encoding='utf-8')
+    lines = fd.readlines()
+    wisdom = random.choice(lines)
+    fd.close()
+    print("Wisdom sent: ", wisdom)
+    await interaction.response.send_message(wisdom)
+
+@client.tree.command(name = "mywisdom", description = "Receive a random wisdom from Adrian the Chango") 
+async def daily_wisdom(interaction: discord.Interaction):
+    fd = open("wisdom1.txt", "r", encoding='utf-8')
+    lines = fd.readlines()
+    wisdom = random.choice(lines)
+    fd.close()
+    print("Wisdom sent: ", wisdom)
+    await interaction.response.send_message(wisdom)
+
+@client.tree.command(name = "divswisdom", description = "Receive a random wisdom from Divanni the Gomez") 
+async def daily_wisdom3(interaction: discord.Interaction):
+    fd = open("wisdomdiv.txt", "r", encoding='utf-8')
     lines = fd.readlines()
     wisdom = random.choice(lines)
     fd.close()
