@@ -2,7 +2,7 @@
 ## What is it?
 A Discord bot that replies to TikTok links with the corresponding video file for that link.
 
-Dependencies: Node.js, Selenium Webdriver, Axios, discord.js, discord-reply
+Dependencies: Selenium Webdriver, Discord.py, Python's Requests library
 
 ## How does it work?
 Uses Selenium WebDriver's headless browser to extract data from the given link.
