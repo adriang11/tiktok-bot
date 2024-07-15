@@ -2,6 +2,7 @@ import os
 import discord
 import time
 import traceback
+import random
 import requests
 from discord import app_commands
 from dotenv import load_dotenv
@@ -15,20 +16,32 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import TimeoutException
+from typing import Optional
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 CHROME_DRIVER_PATH = os.getenv('CHROME_DRIVER_PATH')
 
 class MyClient(discord.Client):
+    def __init__(self, *, intents: discord.Intents):
+        super().__init__(intents=intents)
+        self.synced = False
+        self.tree = app_commands.CommandTree(self)
+    
     async def on_ready(self):
-        print(f'{client.user} is Ready to go!!')
-        # await tree.sync(guild=discord.Object(id=Your guild id))
+        await self.wait_until_ready()
+        if  not self.synced:
+            await self.tree.sync()
+            self.synced = True
+
         await self.change_presence(activity=discord.Game(name="League of Legends"))
         dungeon = client.get_channel(1149980884523556915)
+        degens = client.get_channel(1045937547597053982)
         ducklings = client.get_channel(915088526129909842)
         # await dungeon.send('I am alive and capable of feeling.')
+        # await degens.send('I am alive and capable of feeling.')
         # await ducklings.send('I am alive and capable of feeling.')
+        print(f'{client.user} is Ready to go!!')
 
     async def on_message(self, message):
         if message.author.id == self.user.id:
@@ -43,11 +56,21 @@ class MyClient(discord.Client):
         options.add_argument('--headless=new')
 
         try:
+            # strip link from message if appicable
+            link = message.content
+            print(f'[DEBUG TRACE] message detected: {link}\n')
+
+            lst = link.split(' ')
+            for word in lst:
+                if '.tiktok.com/' in word:
+                    link = word
+
+            print(f'[DEBUG TRACE] extracted link: {link}\n')
+
             # initialize the Selenium WebDriver
             driver = webdriver.Chrome(service=service, options=options)
 
-            driver.get(message.content)
-            print(f'[DEBUG TRACE] tiktok link: {message.content}\n')
+            driver.get(link)
 
             # allow page load before continuing (better fix in progress)
             time.sleep(3)
@@ -117,20 +140,70 @@ class MyClient(discord.Client):
             print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
             await message.reply('[ERROR] Session not created: please notify Adrian to update Chromedriver')
         except Exception as e:
-            print('oopsies\n')
-            traceback.print_exc()
-            await message.reply(content=('Error: ' + str(e)), mention_author=True)
+            if e.__class__ is discord.errors.HTTPException:
+                print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
+                await message.reply(content=('Error: File too large. Maybe stop sending 12 minute tiktoks?'), mention_author=True)
+            else:
+                print('oopsies\n')
+                traceback.print_exc()
+                await message.reply(content=('Error: Unknown Error Occured. Please ping Adrian'), mention_author=True)
         finally:
             driver.quit()
-    
-    # @tree.command(name = "commandname", description = "My first application Command", guild=discord.Object(id=12417128931)) #Add the guild ids in which the slash command will appear. If it should be in all, remove the argument, but note that it will take some time (up to an hour) to register the command if it's for all guilds.
-    # async def first_command(interaction):
-    #     await interaction.response.send_message("Hello!")
 
 intents = discord.Intents.default()
 intents.message_content = True
 client = MyClient(intents=intents)
-# tree = app_commands.CommandTree(client)
+
+@client.tree.command(name = "test", description = "Says 'yo'. Nothing else") 
+async def test_command(interaction: discord.Interaction):
+    await interaction.response.send_message("yo")
+
+@client.tree.command(name = "wisdom", description = "Receive a random wisdom from Pascal the Sea Otter") 
+async def daily_wisdom(interaction: discord.Interaction):
+    fd = open("wisdom.txt", "r", encoding='utf-8')
+    lines = fd.readlines()
+    wisdom = random.choice(lines)
+    fd.close()
+    print("Wisdom sent: ", wisdom)
+    await interaction.response.send_message(wisdom)
+
+@client.tree.command(name = "mywisdom", description = "Receive a random wisdom from Adrian the Chango") 
+async def daily_wisdom(interaction: discord.Interaction):
+    fd = open("wisdom1.txt", "r", encoding='utf-8')
+    lines = fd.readlines()
+    wisdom = random.choice(lines)
+    fd.close()
+    print("Wisdom sent: ", wisdom)
+    await interaction.response.send_message(wisdom)
+
+@client.tree.command(name = "divswisdom", description = "Receive a random wisdom from Divanni the Gomez") 
+async def daily_wisdom3(interaction: discord.Interaction):
+    fd = open("wisdomdiv.txt", "r", encoding='utf-8')
+    lines = fd.readlines()
+    wisdom = random.choice(lines)
+    fd.close()
+    print("Wisdom sent: ", wisdom)
+    await interaction.response.send_message(wisdom)
+
+@client.tree.command(name = "poll", description = "Creates a poll") 
+async def test_command(interaction: discord.Interaction, message: str, choice1: str, choice2: str, choice3: Optional[str], choice4: Optional[str], choice5: Optional[str], choice6: Optional[str], choice7: Optional[str], choice8: Optional[str], choice9: Optional[str], choice10: Optional[str]):
+    
+    
+    emojis = ['1️⃣','2️⃣']
+    options = [choice1, choice2]
+    
+    for i in range(len(options)):
+        options[i] = f"{emojis[i]} {options[i]} \n"
+    options = '\n'.join(options)
+
+    embed = discord.Embed(title=message, description=options, color=0x13a6f0)
+
+    embed.set_footer(text="Poll created by somebody in the server xd")
+    
+    await interaction.response.send_message(embed=embed)
+    sent = await interaction.original_response()
+    for emoji in emojis:
+        await sent.add_reaction(emoji)
 
 client.run(TOKEN)
 

@@ -9,6 +9,17 @@ Uses Selenium WebDriver's headless browser to extract data from the given link.
 Makes a get request with Axios on the URL of the video (found in the src tag of the HTML), streams the response to a file, and sends the file in chat on Discord.
 Additionally interfaces with Heroku to host the bot 24/7 on the cloud.
 
-## How to run
-In the main directory, run python app.py
-and you're good to go!
+## Required Permissions
+- Read Messages/View Channels
+- Send Messages
+- Send Messages in Threads
+- Attach Files
+- Read Message History
+- Add Reactions
+- Use Slash Commands
+
+## A Word About ChromeDriver
+This bot uses Selenium that makes use of Chromedriver for Chrome to automate testing of websites.
+When running this project locally, the installed version of Chromedriver should be in sync with the version of Chrome you are using.
+You can find the latest stable builds  
+https://googlechromelabs.github.io/chrome-for-testing/
