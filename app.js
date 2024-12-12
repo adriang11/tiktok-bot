@@ -1,3 +1,5 @@
+//NO LONGER USED
+
 const {Client, MessageAttachment} = require('discord.js');
 const client = new Client();
 
