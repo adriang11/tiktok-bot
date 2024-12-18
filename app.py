@@ -91,8 +91,8 @@ class MyClient(discord.Client):
             driver.get(link)
 
             # allow page load before continuing
-            # element = driver.find_element(By.TAG_NAME, 'video')
-            element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+            element = driver.find_element(By.TAG_NAME, 'video')
+            # element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
 
             print('[DEBUG TRACE] element found\n')
             
@@ -143,10 +143,10 @@ class MyClient(discord.Client):
 
         except OSError as e:
             print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-            await message.reply('The bot is currently feeling penis and balls rn. Count to 10 and try again.')
+            await message.reply('Bot is working on another thing. Count to 10 and try again.')
         except TimeoutException as e:
             print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
-            await message.reply('[ERROR] TimeoutException caught')
+            await message.reply('[ERROR] TimeoutException caught (Basically Heroku sucks)')
         except NoSuchElementException as e:
             print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
             try:
