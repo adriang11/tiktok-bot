@@ -91,9 +91,8 @@ class MyClient(discord.Client):
             driver.get(link)
 
             # allow page load before continuing (better fix in progress)
-            time.sleep(3)
+            # time.sleep(3)
             
-            # wait = WebDriverWait(driver, 3)
             # element = wait.until(EC.element_to_be_clickable((By.TAG_NAME, 'video')))
             element = driver.find_element(By.TAG_NAME, 'video')
             print('[DEBUG TRACE] element found\n')
