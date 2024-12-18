@@ -64,6 +64,7 @@ class MyClient(discord.Client):
 
         options = webdriver.ChromeOptions()
         options.add_argument('--headless=new')
+        options.add_argument('--no-sandbox')
         options.add_argument(f"user-agent={headers}")
 
         try:
@@ -84,7 +85,8 @@ class MyClient(discord.Client):
             print(f'[DEBUG TRACE] extracted link: {link}\n')
 
             # initialize the Selenium WebDriver
-            driver = webdriver.Chrome(service=service, options=options)
+            # driver = webdriver.Chrome(service=service, options=options)
+            driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
 
             driver.get(link)
 
