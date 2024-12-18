@@ -141,7 +141,7 @@ class MyClient(discord.Client):
 
             # time.sleep(30)
 
-        except WindowsError as e:
+        except OSError as e:
             print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
             await message.reply('The bot is currently feeling penis and balls rn. Count to 10 and try again.')
         except TimeoutException as e:
