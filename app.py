@@ -91,7 +91,7 @@ class MyClient(discord.Client):
 
             driver.get(link)
 
-            time.sleep(3)
+            time.sleep(1)
 
             # allow page load before continuing
             # element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
