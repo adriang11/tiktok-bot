@@ -65,6 +65,7 @@ class MyClient(discord.Client):
 
         options = webdriver.ChromeOptions()
         options.add_argument('--headless=new')
+        options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--no-sandbox')
         options.add_argument(f"user-agent={headers}")
 
@@ -160,7 +161,7 @@ class MyClient(discord.Client):
                 driver.get_screenshot_as_file("screenshot.png")
                 await message.reply(file=discord.File('screenshot.png'))
                 
-                divs = WebDriverWait(wrapper, 20, 0.5, (StaleElementReferenceException)).until(lambda x: x.find_elements(By.TAG_NAME, 'div'))
+                divs = WebDriverWait(wrapper, 10, 0.5, (StaleElementReferenceException)).until(lambda x: x.find_elements(By.TAG_NAME, 'div'))
                 # divs = wrapper.find_elements(By.TAG_NAME, 'div')
                 
                 files = []
