@@ -16,6 +16,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import SessionNotCreatedException
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
 from typing import Optional
 
@@ -99,8 +100,9 @@ class MyClient(discord.Client):
             try:
                 source = element.find_element(By.TAG_NAME, 'source')
                 url = source.get_attribute('src')
-                # print('[DEBUG TRACE] src link: ', url, '\n')
-            except NoSuchElementException:
+                
+            except (NoSuchElementException, StaleElementReferenceException):
+                print('[DEBUG TRACE] stale element found in src')
                 url = element.get_attribute('src')
 
             all_cookies = driver.get_cookies()
