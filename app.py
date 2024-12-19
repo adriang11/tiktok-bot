@@ -91,8 +91,6 @@ class MyClient(discord.Client):
 
             driver.get(link)
 
-            time.sleep(1)
-
             # allow page load before continuing
             # element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
             element = driver.find_element(By.TAG_NAME, 'video')
@@ -169,6 +167,7 @@ class MyClient(discord.Client):
                 found = []
                 fnum = 0
                 for i in divs:
+                    WebDriverWait(i, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_element_located((By.TAG_NAME, 'img')))
                     if i.get_attribute('data-swiper-slide-index') not in found:
                         found.append(i.get_attribute('data-swiper-slide-index'))
                         container = i.find_element(By.TAG_NAME, 'img')
