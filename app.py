@@ -153,7 +153,10 @@ class MyClient(discord.Client):
             print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
             try:
                 driver.get_screenshot_as_file("screenshot.png")
+                await message.reply(file=discord.File('screenshot.png'))
                 wrapper = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
+                driver.get_screenshot_as_file("screenshot.png")
+                await message.reply(file=discord.File('screenshot.png'))
                 divs = wrapper.find_elements(By.TAG_NAME, 'div')
                 files = []
                 found = []
@@ -197,7 +200,6 @@ class MyClient(discord.Client):
             except Exception as e:
                 print('oopsies\n')
                 traceback.print_exc()
-                await message.reply(file=discord.File('screenshot.png'))
                 await message.reply(content=("idk bot broke lawlz. mature content maybe?"), mention_author=True)
 
         except SessionNotCreatedException as e:
