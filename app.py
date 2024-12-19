@@ -154,8 +154,8 @@ class MyClient(discord.Client):
             try:
                 driver.get_screenshot_as_file("screenshot.png")
                 await message.reply(file=discord.File('screenshot.png'))
-                wrapper = WebDriverWait(driver, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
-                divs = WebDriverWait(wrapper, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'div')))
+                wrapper = WebDriverWait(driver, 10, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
+                divs = WebDriverWait(wrapper, 10, 0.5).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'div')))
                 # divs = wrapper.find_elements(By.TAG_NAME, 'div')
                 files = []
                 found = []
