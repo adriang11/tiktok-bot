@@ -152,22 +152,22 @@ class MyClient(discord.Client):
         except NoSuchElementException as e:
             print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
             try:
-                driver.get_screenshot_as_file("screenshot.png")
-                await message.reply(file=discord.File('screenshot.png'))
+                # driver.get_screenshot_as_file("screenshot.png")
+                # await message.reply(file=discord.File('screenshot.png'))
 
                 wrapper = WebDriverWait(driver, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
                 
                 driver.get_screenshot_as_file("screenshot.png")
                 await message.reply(file=discord.File('screenshot.png'))
                 
-                divs = WebDriverWait(wrapper, 10, 0.5, (StaleElementReferenceException)).until(lambda x: x.find_elements(By.TAG_NAME, 'div'))
+                divs = WebDriverWait(wrapper, 20, 0.5, (StaleElementReferenceException)).until(lambda x: x.find_elements(By.TAG_NAME, 'div'))
                 # divs = wrapper.find_elements(By.TAG_NAME, 'div')
                 
                 files = []
                 found = []
                 fnum = 0
                 for i in divs:
-                    WebDriverWait(i, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_element_located((By.TAG_NAME, 'img')))
+                    WebDriverWait(i, 10, 0.5, (StaleElementReferenceException)).until(lambda x: x.find_element((By.TAG_NAME, 'img')))
                     if i.get_attribute('data-swiper-slide-index') not in found:
                         found.append(i.get_attribute('data-swiper-slide-index'))
                         container = i.find_element(By.TAG_NAME, 'img')
