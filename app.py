@@ -47,11 +47,16 @@ class MyClient(discord.Client):
         print(f'{client.user} is Ready to go!!')
 
     async def on_message(self, message):
+        spoilerwarning = False
+        
         if message.author.id == self.user.id:
             return
         
         if '.tiktok.com/' not in message.content:
             return
+
+        if message.content.startswith("||") and message.content.endswith("||"):
+            spoilerwarning = True
 
         headers = {
             'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36', 
@@ -76,13 +81,13 @@ class MyClient(discord.Client):
 
             if link == self.lastlink:
                 print(f'[DEBUG TRACE] last link matched: {link}\n')
-                await message.reply(file=discord.File('output.mp4'))
+                await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
                 return
 
             lst = link.split(' ')
             for word in lst:
                 if '.tiktok.com/' in word:
-                    link = word
+                    link = word.strip('||')
 
             print(f'[DEBUG TRACE] extracted link: {link}\n')
 
@@ -129,12 +134,12 @@ class MyClient(discord.Client):
 
                 if 'h264' not in log_file_content:
                     os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
-                    await message.reply(file=discord.File('output1.mp4'))
+                    await message.reply(file=discord.File('output1.mp4', spoiler=spoilerwarning))
                     print('[DEBUG TRACE] file sent, crisis averted\n')
                     #os.remove('output.mp4')
                     os.remove('output1.mp4')
                 else:
-                    await message.reply(file=discord.File('output.mp4'))
+                    await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
                     print('[DEBUG TRACE] file sent\n')
                     self.lastlink = link
                     #os.remove('output.mp4')
@@ -153,6 +158,8 @@ class MyClient(discord.Client):
         except NoSuchElementException as e:
             print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
             try:
+                # Slideshow handling
+
                 # driver.get_screenshot_as_file("screenshot.png")
                 # await message.reply(file=discord.File('screenshot.png'))
 
@@ -188,7 +195,7 @@ class MyClient(discord.Client):
                         with open(filename, 'wb') as out_file:
                             fnum+=1
                             shutil.copyfileobj(r.raw, out_file)
-                            files.append(discord.File(filename))
+                            files.append(discord.File(filename, spoiler=spoilerwarning))
                         del r
 
                 await message.channel.send(files=files)
