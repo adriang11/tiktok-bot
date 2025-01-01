@@ -87,6 +87,7 @@ class MyClient(discord.Client):
             lst = link.split(' ')
             for word in lst:
                 if '.tiktok.com/' in word:
+                    if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
                     link = word.strip('||')
 
             print(f'[DEBUG TRACE] extracted link: {link}\n')
