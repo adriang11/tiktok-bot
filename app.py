@@ -223,7 +223,7 @@ class MyClient(discord.Client):
             else:
                 print('oopsies\n')
                 traceback.print_exc()
-                await message.reply(content=('Error: Unknown Error Occured. Please ping Adrian'), mention_author=True)
+                await message.reply(content=('Error: Unknown Error Occured. Don\'t even ping Adrian he\'ll see this... \n' + e), mention_author=True)
         finally:
             driver.quit()
 
@@ -255,7 +255,7 @@ async def daily_wisdom(interaction: discord.Interaction):
 
 @client.tree.command(name = "mywisdom", description = "Receive a random wisdom from Adrian the Chango") 
 async def daily_wisdom(interaction: discord.Interaction):
-    fd = open("wisdom1.txt", "r", encoding='utf-8')
+    fd = open("wisdomadrian.txt", "r", encoding='utf-8')
     lines = fd.readlines()
     wisdom = random.choice(lines)
     fd.close()
