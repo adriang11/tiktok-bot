@@ -46,35 +46,9 @@ class MyClient(discord.Client):
         # await ducklings.send('I am alive and capable of feeling.')
         print(f'{client.user} is Ready to go!!')
 
-    async def on_message(self, message):
-        spoilerwarning = False
-        
-        if message.author.id == self.user.id:
-            return
-        
-        if '.tiktok.com/' not in message.content:
-            return
+    async def web_scrape(self, message, options, headers, spoilerwarning):
+            print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol')
 
-        if message.content.startswith("||") and message.content.endswith("||"):
-            spoilerwarning = True
-
-        headers = {
-            'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36', 
-            'Accept-Language':'en-US,en;q=0.9', 
-            'Accept-Encoding':'gzip, deflate, br',
-            'Accept':'text/html,application/x-protobuf,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Referer':'https://www.tiktok.com/'
-        }
-
-        service = Service(executable_path=CHROME_DRIVER_PATH)
-
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless=new')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
-        options.add_argument(f"user-agent={headers}")
-
-        try:
             # strip link from message if appicable
             link = message.content
             print(f'[DEBUG TRACE] message detected: {link}\n')
@@ -137,7 +111,7 @@ class MyClient(discord.Client):
                     os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
                     await message.reply(file=discord.File('output1.mp4', spoiler=spoilerwarning))
                     print('[DEBUG TRACE] file sent, crisis averted\n')
-                    #os.remove('output.mp4')
+                    await message.channel.send("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know")
                     os.remove('output1.mp4')
                 else:
                     await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
@@ -146,20 +120,13 @@ class MyClient(discord.Client):
                     #os.remove('output.mp4')
             else:
                 print(r.status_code, '\n')
-                await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, we lost)'), mention_author=True)
+                await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
 
             # time.sleep(30)
-
-        except OSError as e:
-            print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-            await message.reply('Bot is working on another thing. Count to 10 and try again.')
-        except TimeoutException as e:
-            print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
-            await message.reply('[ERROR] TimeoutException caught (Basically Heroku sucks)')
-        except NoSuchElementException as e:
-            print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
-            try:
-                # Slideshow handling
+            return driver
+    
+    async def process_slideshow(self, driver, message, headers, spoilerwarning):
+                print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol')
 
                 # driver.get_screenshot_as_file("screenshot.png")
                 # await message.reply(file=discord.File('screenshot.png'))
@@ -207,11 +174,134 @@ class MyClient(discord.Client):
                 files.clear()
                 print('[DEBUG TRACE] files cleared\n')
                 fnum = 0
+
+    async def process_reel(self, message, options, headers, spoilerwarning):
+            print(f'[DEBUG TRACE] Jarvis, initiate Instagram protocol')
+            
+            # strip link from message if appicable
+            link = message.content
+            print(f'[DEBUG TRACE] message detected: {link}\n')
+
+            if link == self.lastlink:
+                print(f'[DEBUG TRACE] last link matched: {link}\n')
+                await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
+                return
+
+            lst = link.split(' ')
+            for word in lst:
+                if 'instagram.com/reel/' in word:
+                    if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
+                    link = word.strip('||')
+
+            print(f'[DEBUG TRACE] extracted link: {link}\n')
+
+            # initialize the Selenium WebDriver
+            # driver = webdriver.Chrome(service=service, options=options)
+            driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+
+            driver.get(link)
+
+            # allow page load before continuing
+            element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+            # element = driver.find_element(By.TAG_NAME, 'video')
+            
+            print('[DEBUG TRACE] element found\n')
+            
+            url = element.get_attribute('src')
+
+            all_cookies = driver.get_cookies()
+            cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
+
+            r = requests.get(url, cookies=cookies, headers=headers)
+            
+            if os.path.exists('output.mp4'):
+                os.remove('output.mp4')
+                print('[DEBUG TRACE] file removed\n')
+
+            if r.status_code == 200:
+                with open('output.mp4', 'wb') as f:
+                    f.write(r.content)
+                print('[DEBUG TRACE] video downloaded\n')
+
+                # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
+                # os.system("ffmpeg.exe -v error -i output.mp4 -f null - >error.log 2>&1")
+                os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
+                log_file = open("log.txt","r")
+                log_file_content = log_file.read()
+                print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+
+                if 'h264' not in log_file_content:
+                    os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
+                    await message.reply(file=discord.File('output1.mp4', spoiler=spoilerwarning))
+                    print('[DEBUG TRACE] file sent, crisis averted\n')
+                    await message.channel.send("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know")
+                    os.remove('output1.mp4')
+                else:
+                    await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
+                    print('[DEBUG TRACE] file sent\n')
+                    self.lastlink = link
+                    #os.remove('output.mp4')
+            else:
+                print(r.status_code, '\n')
+                await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
+
+            # time.sleep(30)
+            return driver
+
+
+    async def on_message(self, message):
+        spoilerwarning = False
+        
+        if message.author.id == self.user.id:
+            return
+        
+        if '.tiktok.com/' not in message.content and 'instagram.com/reel' not in message.content:
+            return
+
+        if message.content.startswith("||") and message.content.endswith("||"):
+            spoilerwarning = True
+
+        headers = {
+            'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36', 
+            'Accept-Language':'en-US,en;q=0.9', 
+            'Accept-Encoding':'gzip, deflate, br',
+            'Accept':'text/html,application/x-protobuf,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Referer':'https://www.tiktok.com/'
+        }
+
+        service = Service(executable_path=CHROME_DRIVER_PATH)
+
+        options = webdriver.ChromeOptions()
+        options.add_argument('--headless=new')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--no-sandbox')
+        options.add_argument(f"user-agent={headers}")
+
+        try:
+            if '.tiktok.com/' in message.content:
+                driver = await self.web_scrape(message, options, headers, spoilerwarning)
+            else:
+                driver = await self.process_reel(message, options, headers, spoilerwarning)
+
+        except OSError as e:
+            if str(e).startswith('No connection adapters were found for'):
+                print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
+                await message.reply('uummm')
+            else:
+                print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
+                await message.reply('Bot is working on another thing. Count to 10 and try again.')
+        except TimeoutException as e:
+            print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
+            await message.reply('[ERROR] TimeoutException caught (Basically Heroku sucks)')
+        except NoSuchElementException as e:
+            print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
+            try:
+                await self.process_slideshow(driver, message, headers, spoilerwarning)
             
             except Exception as e:
                 print('oopsies\n')
                 traceback.print_exc()
-                await message.reply(content=("idk bot broke lawlz. mature content maybe?"), mention_author=True)
+                await message.reply(content=("idk bot broke lawlz. mature content maybe? xd"), mention_author=True)
 
         except SessionNotCreatedException as e:
             print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
@@ -234,6 +324,10 @@ client = MyClient(intents=intents)
 @client.tree.command(name = "test", description = "Says 'yo'. Nothing else") 
 async def test_command(interaction: discord.Interaction):
     await interaction.response.send_message("yo")
+
+@client.tree.command(name = "fortune", description = "Tells you a special fortune you need to hear") #using to determine version deployed on heroku
+async def test_command(interaction: discord.Interaction):
+    await interaction.response.send_message("balls in my jaws lawl")
 
 @client.tree.command(name = "coinflip", description = "flips a coin") 
 async def coinflip(interaction: discord.Interaction):
