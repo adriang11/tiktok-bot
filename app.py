@@ -46,7 +46,7 @@ class MyClient(discord.Client):
         # await ducklings.send('I am alive and capable of feeling.')
         print(f'{client.user} is Ready to go!!')
 
-    async def web_scrape(self, message, options, headers, spoilerwarning):
+    async def web_scrape(self, driver, message, headers, spoilerwarning):
             print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol')
 
             # strip link from message if appicable
@@ -65,10 +65,6 @@ class MyClient(discord.Client):
                     link = word.strip('||')
 
             print(f'[DEBUG TRACE] extracted link: {link}\n')
-
-            # initialize the Selenium WebDriver
-            # driver = webdriver.Chrome(service=service, options=options)
-            driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
 
             driver.get(link)
 
@@ -123,10 +119,9 @@ class MyClient(discord.Client):
                 await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
 
             # time.sleep(30)
-            return driver
     
     async def process_slideshow(self, driver, message, headers, spoilerwarning):
-                print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol')
+                print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
 
                 # driver.get_screenshot_as_file("screenshot.png")
                 # await message.reply(file=discord.File('screenshot.png'))
@@ -175,8 +170,8 @@ class MyClient(discord.Client):
                 print('[DEBUG TRACE] files cleared\n')
                 fnum = 0
 
-    async def process_reel(self, message, options, headers, spoilerwarning):
-            print(f'[DEBUG TRACE] Jarvis, initiate Instagram protocol')
+    async def process_reel(self, driver, message, headers, spoilerwarning):
+            print(f'[DEBUG TRACE] Jarvis, initiate Instagram protocol\n')
             
             # strip link from message if appicable
             link = message.content
@@ -195,10 +190,6 @@ class MyClient(discord.Client):
 
             print(f'[DEBUG TRACE] extracted link: {link}\n')
 
-            # initialize the Selenium WebDriver
-            # driver = webdriver.Chrome(service=service, options=options)
-            driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
-
             driver.get(link)
 
             # allow page load before continuing
@@ -212,7 +203,8 @@ class MyClient(discord.Client):
             all_cookies = driver.get_cookies()
             cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
 
-            r = requests.get(url, cookies=cookies, headers=headers)
+            # CANNOT make GET request to blob link
+            r = requests.get(url, cookies=cookies, headers=headers) #WindowsError caught:  No connection adapters were found for 'blob:https://www.instagram.com/...'
             
             if os.path.exists('output.mp4'):
                 os.remove('output.mp4')
@@ -277,11 +269,15 @@ class MyClient(discord.Client):
         options.add_argument('--no-sandbox')
         options.add_argument(f"user-agent={headers}")
 
+        # initialize the Selenium WebDriver
+        # driver = webdriver.Chrome(service=service, options=options)
+        driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+
         try:
             if '.tiktok.com/' in message.content:
-                driver = await self.web_scrape(message, options, headers, spoilerwarning)
+                await self.web_scrape(driver, message, headers, spoilerwarning)
             else:
-                driver = await self.process_reel(message, options, headers, spoilerwarning)
+                await self.process_reel(driver, message, headers, spoilerwarning)
 
         except OSError as e:
             if str(e).startswith('No connection adapters were found for'):
