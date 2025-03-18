@@ -80,10 +80,11 @@ class MyClient(discord.Client):
                 url = source.get_attribute('src')
                 
             except (StaleElementReferenceException):
-                print('[DEBUG TRACE] stale element found in src\n')
-                newelement = driver.find_element(By.TAG_NAME, 'video')
-                newsource = newelement.find_element(By.TAG_NAME, 'source')
-                url = newsource.get_attribute('src')
+                print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
+                driver.refresh()
+                element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+                source = element.find_element(By.TAG_NAME, 'source')
+                url = source.get_attribute('src')
 
             all_cookies = driver.get_cookies()
             cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
@@ -130,8 +131,9 @@ class MyClient(discord.Client):
                 # await message.reply(file=discord.File('screenshot.png'))
 
                 wrapper = WebDriverWait(driver, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
-                
+                print(f'[DEBUG TRACE] wrapper found\n')
                 divs = WebDriverWait(wrapper, 10, 0.5, (StaleElementReferenceException)).until(lambda x: x.find_elements(By.TAG_NAME, 'div'))
+                print(f'[DEBUG TRACE] div found\n')
                 # divs = wrapper.find_elements(By.TAG_NAME, 'div')
                 
                 files = []
@@ -285,7 +287,8 @@ class MyClient(discord.Client):
             try:
                 await self.process_slideshow(driver, message, headers, spoilerwarning)
             except TimeoutException as e:
-                await message.reply(content=("Local Failure."), mention_author=True)
+                print(f'[DEBUG TRACE] TimeoutException: ', e, '\n')
+                await message.reply(content=("Failure."), mention_author=True)
             except Exception as e:
                 print('oopsies\n')
                 traceback.print_exc()
@@ -322,7 +325,7 @@ client = MyClient(intents=intents)
 async def test_command(interaction: discord.Interaction):
     await interaction.response.send_message("yo")
 
-@client.tree.command(name = "fortune", description = "Essentially using as version control") #using to determine version deployed on heroku
+@client.tree.command(name = "fortune", description = "Tells you a special fortune you need to hear") #using to determine version deployed on heroku
 async def fortune(interaction: discord.Interaction):
     await interaction.response.send_message("I am becoming more powerful...")
 
