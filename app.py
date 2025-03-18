@@ -427,7 +427,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
         name = user.get_attribute("content")
         lst = name.split(' ')
         for word in lst:
-            if word.startswith("(") and word.endswith(")"):
+            if word.startswith("(") and word.endswith(":"):
                 name = word.replace('(','').replace(')','')
         
         print(f'[DEBUG TRACE] Found username\n')
@@ -477,14 +477,14 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
 
             if 'h264' not in log_file_content:
                 os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
-                await interaction.channel.send(file=discord.File('output1.mp4', spoiler=spoiler_warning))
-                await interaction.channel.send(fulldesc)
+                await interaction.followup.send(file=discord.File('output1.mp4', spoiler=spoiler_warning))
+                await interaction.followup.send(fulldesc)
                 print('[DEBUG TRACE] file sent, crisis averted\n')
                 await interaction.response.send_message(content=("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know"), ephemeral=True)
                 os.remove('output1.mp4')
             else:
                 await interaction.followup.send(file=discord.File('output.mp4', spoiler=spoiler_warning))
-                await interaction.channel.send(fulldesc)
+                await interaction.followup.send(fulldesc)
                 print('[DEBUG TRACE] file sent\n')
                 client.lastlink = link
                 #os.remove('output.mp4')
@@ -515,7 +515,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                     r = requests.get(url, cookies=cookies, headers=headers, stream=True)
                     
                     if len(files) == 9:
-                        await interaction.channel.send(files=files)
+                        await interaction.followup.send(files=files)
                         num = 1
                         for file in files:
                             os.remove(f'img{num}.png')
@@ -531,13 +531,13 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                         files.append(discord.File(filename, spoiler=spoiler_warning))
                     del r
 
-            await interaction.channel.send(files=files)
+            await interaction.followup.send(files=files)
             num = 1
             for file in files:
                 os.remove(f'img{num}.png')
                 num+=1
             files.clear()
-            await interaction.channel.send(fulldesc)
+            await interaction.followup.send(fulldesc)
             print('[DEBUG TRACE] files cleared\n')
             fnum = 0
         except TimeoutException as e:
