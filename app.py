@@ -19,6 +19,7 @@ from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
 from typing import Optional
+from typing import Literal
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
@@ -50,7 +51,7 @@ class MyClient(discord.Client):
             print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
 
             # strip link from message if appicable
-            link = message.content
+            link = message.content  
             print(f'[DEBUG TRACE] message detected: {link}\n')
 
             if link == self.lastlink:
@@ -75,14 +76,14 @@ class MyClient(discord.Client):
             print('[DEBUG TRACE] element found\n')
             
             try:
-                source = element.find_element(By.TAG_NAME, 'source')
+                source = element.find_element(By.TAG_NAME, 'source') 
                 url = source.get_attribute('src')
                 
             except (StaleElementReferenceException):
                 print('[DEBUG TRACE] stale element found in src\n')
-                element = driver.find_element(By.TAG_NAME, 'video')
-                source = element.find_element(By.TAG_NAME, 'source')
-                url = source.get_attribute('src')
+                newelement = driver.find_element(By.TAG_NAME, 'video')
+                newsource = newelement.find_element(By.TAG_NAME, 'source')
+                url = newsource.get_attribute('src')
 
             all_cookies = driver.get_cookies()
             cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
@@ -239,9 +240,6 @@ class MyClient(discord.Client):
                 print(r.status_code, '\n')
                 await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
 
-            # time.sleep(30)
-            return driver
-
 
     async def on_message(self, message):
         spoilerwarning = False
@@ -287,7 +285,7 @@ class MyClient(discord.Client):
             try:
                 await self.process_slideshow(driver, message, headers, spoilerwarning)
             except TimeoutException as e:
-                await message.reply(content=("Failure."), mention_author=True)
+                await message.reply(content=("Local Failure."), mention_author=True)
             except Exception as e:
                 print('oopsies\n')
                 traceback.print_exc()
@@ -324,9 +322,9 @@ client = MyClient(intents=intents)
 async def test_command(interaction: discord.Interaction):
     await interaction.response.send_message("yo")
 
-@client.tree.command(name = "fortune", description = "Tells you a special fortune you need to hear") #using to determine version deployed on heroku
-async def test_command(interaction: discord.Interaction):
-    await interaction.response.send_message("balls in my jaws lawl")
+@client.tree.command(name = "fortune", description = "Essentially using as version control") #using to determine version deployed on heroku
+async def fortune(interaction: discord.Interaction):
+    await interaction.response.send_message("I am becoming more powerful...")
 
 @client.tree.command(name = "coinflip", description = "flips a coin") 
 async def coinflip(interaction: discord.Interaction):
@@ -347,7 +345,7 @@ async def daily_wisdom(interaction: discord.Interaction):
     await interaction.response.send_message(wisdom)
 
 @client.tree.command(name = "mywisdom", description = "Receive a random wisdom from Adrian the Chango") 
-async def daily_wisdom(interaction: discord.Interaction):
+async def adrians_wisdom(interaction: discord.Interaction):
     fd = open("wisdomadrian.txt", "r", encoding='utf-8')
     lines = fd.readlines()
     wisdom = random.choice(lines)
@@ -356,7 +354,7 @@ async def daily_wisdom(interaction: discord.Interaction):
     await interaction.response.send_message(wisdom)
 
 @client.tree.command(name = "divswisdom", description = "Receive a random wisdom from Divanni the Gomez") 
-async def daily_wisdom3(interaction: discord.Interaction):
+async def divs_wisdom3(interaction: discord.Interaction):
     fd = open("wisdomdiv.txt", "r", encoding='utf-8')
     lines = fd.readlines()
     wisdom = random.choice(lines)
@@ -365,7 +363,7 @@ async def daily_wisdom3(interaction: discord.Interaction):
     await interaction.response.send_message(wisdom)
 
 @client.tree.command(name = "poll", description = "Creates a poll") 
-async def test_command(interaction: discord.Interaction, message: str, choice1: str, choice2: str, choice3: Optional[str], choice4: Optional[str], choice5: Optional[str], choice6: Optional[str], choice7: Optional[str], choice8: Optional[str], choice9: Optional[str], choice10: Optional[str]):
+async def poll(interaction: discord.Interaction, message: str, choice1: str, choice2: str, choice3: Optional[str], choice4: Optional[str], choice5: Optional[str], choice6: Optional[str], choice7: Optional[str], choice8: Optional[str], choice9: Optional[str], choice10: Optional[str]):
     
     
     emojis = ['1️⃣','2️⃣', '3️⃣','4️⃣', '5️⃣', '6️⃣','7️⃣','8️⃣','9️⃣','🔟']
@@ -394,6 +392,171 @@ async def test_command(interaction: discord.Interaction, message: str, choice1: 
 
     for i in correctsize:
         await sent.add_reaction(emojis[i])
+
+@client.tree.command(name = "withcaption", description = "Send tiktok with description")
+async def with_caption(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
+    headers = {
+            'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36', 
+            'Accept-Language':'en-US,en;q=0.9', 
+            'Accept-Encoding':'gzip, deflate, br',
+            'Accept':'text/html,application/x-protobuf,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Referer':'https://www.tiktok.com/'
+        }
+
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless=new')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--no-sandbox')
+    options.add_argument(f"user-agent={headers}")
+
+    driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+
+    try:
+        print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+
+        print(f'[DEBUG TRACE] message detected: {link}\n')
+
+        if link == client.lastlink:
+            print(f'[DEBUG TRACE] last link matched: {link}\n')
+            await interaction.response.send_message(file=discord.File('output.mp4', spoiler=spoilered))
+            return
+
+        print(f'[DEBUG TRACE] extracted link: {link}\n')
+
+        driver.get(link)
+
+        meta = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:description']")))
+        desc = meta.get_attribute("content")
+
+        element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+
+        print('[DEBUG TRACE] element found\n')
+        
+        try:
+            source = element.find_element(By.TAG_NAME, 'source') 
+            url = source.get_attribute('src')
+            
+        except (StaleElementReferenceException):
+            print('[DEBUG TRACE] stale element found in src\n')
+            newelement = driver.find_element(By.TAG_NAME, 'video')
+            newsource = newelement.find_element(By.TAG_NAME, 'source')
+            url = newsource.get_attribute('src')
+
+        all_cookies = driver.get_cookies()
+        cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
+
+        r = requests.get(url, cookies=cookies, headers=headers)
+        
+        if os.path.exists('output.mp4'):
+            os.remove('output.mp4')
+            print('[DEBUG TRACE] file removed\n')
+
+        if r.status_code == 200:
+            with open('output.mp4', 'wb') as f:
+                f.write(r.content)
+            print('[DEBUG TRACE] video downloaded\n')
+
+            # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
+            # os.system("ffmpeg.exe -v error -i output.mp4 -f null - >error.log 2>&1")
+            os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
+            log_file = open("log.txt","r")
+            log_file_content = log_file.read()
+            print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+
+            if 'h264' not in log_file_content:
+                os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
+                await interaction.channel.send_message(file=discord.File('output1.mp4', spoiler=spoilered))
+                await interaction.channel.send_message(desc)
+                print('[DEBUG TRACE] file sent, crisis averted\n')
+                await interaction.response.send_message(content=("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know"), ephemeral=True)
+                os.remove('output1.mp4')
+            else:
+                await interaction.channel.send_message(file=discord.File('output.mp4', spoiler=spoilered))
+                await interaction.channel.send_message(desc)
+                print('[DEBUG TRACE] file sent\n')
+                client.lastlink = link
+                os.remove('output.mp4')
+        else:
+            print(r.status_code, '\n')
+            await interaction.response.send_message(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), ephemeral=True)
+
+    
+    except NoSuchElementException as e:
+        print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
+        try:
+            print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
+
+            wrapper = WebDriverWait(driver, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
+            divs = WebDriverWait(wrapper, 10, 0.5, (StaleElementReferenceException)).until(lambda x: x.find_elements(By.TAG_NAME, 'div'))
+
+            files = []
+            found = []
+            fnum = 0
+            for i in divs:
+                if i.get_attribute('data-swiper-slide-index') not in found:
+                    found.append(i.get_attribute('data-swiper-slide-index'))
+                    container = i.find_element(By.TAG_NAME, 'img')
+                    url = container.get_attribute('src')
+                    all_cookies = driver.get_cookies()
+                    cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
+
+                    r = requests.get(url, cookies=cookies, headers=headers, stream=True)
+                    
+                    if len(files) == 9:
+                        await interaction.channel.send(files=files)
+                        num = 1
+                        for file in files:
+                            os.remove(f'img{num}.png')
+                            num+=1
+                        files.clear()
+                        print('[DEBUG TRACE] files cleared\n')
+                        fnum = 0
+                    
+                    filename = f"img{fnum+1}.png"
+                    with open(filename, 'wb') as out_file:
+                        fnum+=1
+                        shutil.copyfileobj(r.raw, out_file)
+                        files.append(discord.File(filename, spoiler=spoilered))
+                    del r
+
+            await interaction.channel.send(files=files)
+            num = 1
+            for file in files:
+                os.remove(f'img{num}.png')
+                num+=1
+            files.clear()
+            await interaction.channel.send_message(desc)
+            print('[DEBUG TRACE] files cleared\n')
+            fnum = 0
+        except TimeoutException as e:
+            await interaction.response.send_message(content=("Failure."), ephemeral=True)
+        except Exception as e:
+            print('oopsies\n')
+            traceback.print_exc()
+            await interaction.response.send_message(content=("idk bot broke lawlz. mature content maybe? xd"), ephemeral=True)
+    except OSError as e:
+        if str(e).startswith('No connection adapters were found for'):
+            print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
+            await interaction.response.send_message(content=('uummm'), ephemeral=True)
+        else:
+            print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
+            await interaction.response.send_message(content=('Bot is working on another thing. Count to 10 and try again.'), ephemeral=True)
+    except TimeoutException as e:
+        print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
+        await interaction.response.send_message(content=('[ERROR] TimeoutException caught (Basically Heroku sucks)'), ephemeral=True)
+    except SessionNotCreatedException as e:
+        print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
+        await interaction.response.send_message(content=('[ERROR] Session not created: please notify Adrian to update Chromedriver'), ephemeral=True)
+    except Exception as e:
+        if e.__class__ is discord.errors.HTTPException:
+            print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
+            await interaction.response.send_message(content=('Error: File too large. Maybe stop sending 12 minute tiktoks?'), ephemeral=True)
+        else:
+            print('oopsies\n')
+            traceback.print_exc()
+            await interaction.response.send_message(content=('Error: Unknown Error Occured. Don\'t even ping Adrian he\'ll see this... \n', e), ephemeral=True)
+    finally:
+        driver.quit()
 
 client.run(TOKEN)
 
