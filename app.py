@@ -327,7 +327,7 @@ async def test_command(interaction: discord.Interaction):
 
 @client.tree.command(name = "fortune", description = "Tells you a special fortune you need to hear") #using to determine version deployed on heroku
 async def fortune(interaction: discord.Interaction):
-    await interaction.response.send_message("I am becoming more powerful...")
+    await interaction.response.send_message("I have gained sentience...")
 
 @client.tree.command(name = "coinflip", description = "flips a coin") 
 async def coinflip(interaction: discord.Interaction):
@@ -437,7 +437,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
         
         print(f'[DEBUG TRACE] Found description\n')
 
-        fulldesc = name + desc
+        fulldesc = name + ' ' + desc
 
         element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
 
@@ -477,14 +477,16 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
 
             if 'h264' not in log_file_content:
                 os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
-                await interaction.followup.send(file=discord.File('output1.mp4', spoiler=spoiler_warning))
-                await interaction.followup.send(fulldesc)
+                await interaction.followup.send('<' + link + '>')
+                await interaction.channel.send(file=discord.File('output1.mp4', spoiler=spoiler_warning))
+                await interaction.channel.send(fulldesc)
                 print('[DEBUG TRACE] file sent, crisis averted\n')
                 await interaction.response.send_message(content=("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know"), ephemeral=True)
                 os.remove('output1.mp4')
             else:
-                await interaction.followup.send(file=discord.File('output.mp4', spoiler=spoiler_warning))
-                await interaction.followup.send(fulldesc)
+                await interaction.followup.send('<' + link + '>')
+                await interaction.channel.send(file=discord.File('output.mp4', spoiler=spoiler_warning))
+                await interaction.channel.send(fulldesc)
                 print('[DEBUG TRACE] file sent\n')
                 client.lastlink = link
                 #os.remove('output.mp4')
@@ -531,42 +533,43 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                         files.append(discord.File(filename, spoiler=spoiler_warning))
                     del r
 
-            await interaction.followup.send(files=files)
+            await interaction.channel.send(files=files)
             num = 1
             for file in files:
                 os.remove(f'img{num}.png')
                 num+=1
             files.clear()
-            await interaction.followup.send(fulldesc)
+            await interaction.channel.send(fulldesc)
             print('[DEBUG TRACE] files cleared\n')
             fnum = 0
+            await interaction.followup.send(content=("Welcome to the shadow realm"), ephemeral=True)
         except TimeoutException as e:
-            await interaction.response.send_message(content=("Failure."), ephemeral=True)
+            await interaction.followup.send(content=("Failure."), ephemeral=True)
         except Exception as e:
             print('oopsies\n')
             traceback.print_exc()
-            await interaction.response.send_message(content=("idk bot broke lawlz. mature content maybe? xd"), ephemeral=True)
+            await interaction.followup.send(content=("idk bot broke lawlz. mature content maybe? xd"), ephemeral=True)
     except OSError as e:
         if str(e).startswith('No connection adapters were found for'):
             print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-            await interaction.response.send_message(content=('uummm'), ephemeral=True)
+            await interaction.followup.send(content=('uummm'), ephemeral=True)
         else:
             print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-            await interaction.response.send_message(content=('Bot is working on another thing. Count to 10 and try again.'), ephemeral=True)
+            await interaction.followup.send(content=('Bot is working on another thing. Count to 10 and try again.'), ephemeral=True)
     except TimeoutException as e:
         print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
-        await interaction.response.send_message(content=('[ERROR] TimeoutException caught (Basically Heroku sucks)'), ephemeral=True)
+        await interaction.followup.send(content=('[ERROR] TimeoutException caught (Basically Heroku sucks)'), ephemeral=True)
     except SessionNotCreatedException as e:
         print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
-        await interaction.response.send_message(content=('[ERROR] Session not created: please notify Adrian to update Chromedriver'), ephemeral=True)
+        await interaction.followup.send(content=('[ERROR] Session not created: please notify Adrian to update Chromedriver'), ephemeral=True)
     except Exception as e:
         if e.__class__ is discord.errors.HTTPException:
             print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
-            await interaction.response.send_message(content=('Error: File too large. Maybe stop sending 12 minute tiktoks?'), ephemeral=True)
+            await interaction.followup.send(content=('Error: File too large. Maybe stop sending 12 minute tiktoks?'), ephemeral=True)
         else:
             print('oopsies\n')
             traceback.print_exc()
-            await interaction.response.send_message(content=('Error: Unknown Error Occured. Don\'t even ping Adrian he\'ll see this... \n', e), ephemeral=True)
+            await interaction.followup.send(content=('Error: Unknown Error Occured. Don\'t even ping Adrian he\'ll see this... \n', e), ephemeral=True)
     finally:
         driver.quit()
 
