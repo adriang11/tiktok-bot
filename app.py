@@ -398,6 +398,8 @@ async def poll(interaction: discord.Interaction, message: str, choice1: str, cho
 
 @client.tree.command(name = "withcaption", description = "Send tiktok with description")
 async def with_caption(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
+    await interaction.response.defer()
+    
     spoiler_warning = spoilered == "true"
     
     headers = {
@@ -419,15 +421,6 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
     try:
         print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
 
-        print(f'[DEBUG TRACE] message detected: {link}\n')
-
-        if link == client.lastlink:
-            print(f'[DEBUG TRACE] last link matched: {link}\n')
-            await interaction.response.send_message(file=discord.File('output.mp4', spoiler=spoiler_warning))
-            return
-
-        print(f'[DEBUG TRACE] extracted link: {link}\n')
-
         driver.get(link)
 
         user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@name='description']")))
@@ -436,9 +429,13 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
         for word in lst:
             if word.startswith("(") and word.endswith(")"):
                 name = word.replace('(','').replace(')','')
+        
+        print(f'[DEBUG TRACE] Found username\n')
 
         meta = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:description']")))
         desc = meta.get_attribute("content")
+        
+        print(f'[DEBUG TRACE] Found description\n')
 
         fulldesc = name + ': ' + desc
 
