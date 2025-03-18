@@ -430,7 +430,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
 
         driver.get(link)
 
-        user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@name='description']]")))
+        user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@name='description']")))
         name = user.get_attribute("content")
         lst = name.split(' ')
         for word in lst:
