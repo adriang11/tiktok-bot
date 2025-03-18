@@ -483,14 +483,14 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                 await interaction.response.send_message(content=("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know"), ephemeral=True)
                 os.remove('output1.mp4')
             else:
-                await interaction.response.send_message(file=discord.File('output.mp4', spoiler=spoiler_warning))
+                await interaction.followup.send(file=discord.File('output.mp4', spoiler=spoiler_warning))
                 await interaction.channel.send(fulldesc)
                 print('[DEBUG TRACE] file sent\n')
                 client.lastlink = link
                 #os.remove('output.mp4')
         else:
             print(r.status_code, '\n')
-            await interaction.response.send_message(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), ephemeral=True)
+            await interaction.followup.send(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), ephemeral=True)
 
     
     except NoSuchElementException as e:
