@@ -72,7 +72,7 @@ class MyClient(discord.Client):
             driver.get_screenshot_as_file("screenshot.png")
             await message.reply(content="DEBUG MODE STFU IDC", file=discord.File('screenshot.png'))
 
-            photoscheck = WebDriverWait(driver, 5).until(EC.presence_of_all_elements_located(By.CLASS_NAME, "swiper-wrapper"))
+            photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located(By.CLASS_NAME, "swiper-wrapper"))
 
             if photoscheck:  
                 raise NoSuchElementException
