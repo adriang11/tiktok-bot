@@ -542,34 +542,34 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             await interaction.channel.send(fulldesc)
             print('[DEBUG TRACE] files cleared\n')
             fnum = 0
-            await interaction.response.send_message(content=("Welcome to the shadow realm"), ephemeral=True)
+            await interaction.followup.send(content=("Welcome to the shadow realm"), ephemeral=True)
         except TimeoutException as e:
-            await interaction.response.send_message(content=("Failure."), ephemeral=True)
+            await interaction.followup.send(content=("Failure."), ephemeral=True)
         except Exception as e:
             print('oopsies\n')
             traceback.print_exc()
-            await interaction.response.send_message(content=("idk bot broke lawlz. mature content maybe? xd"), ephemeral=True)
+            await interaction.followup.send(content=("idk bot broke lawlz. mature content maybe? xd"), ephemeral=True)
     except OSError as e:
         if str(e).startswith('No connection adapters were found for'):
             print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-            await interaction.response.send_message(content=('uummm'), ephemeral=True)
+            await interaction.followup.send(content=('uummm'), ephemeral=True)
         else:
             print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-            await interaction.response.send_message(content=('Bot is working on another thing. Count to 10 and try again.'), ephemeral=True)
+            await interaction.followup.send(content=('Bot is working on another thing. Count to 10 and try again.'), ephemeral=True)
     except TimeoutException as e:
         print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
-        await interaction.response.send_message(content=('[ERROR] TimeoutException caught (Basically Heroku sucks)'), ephemeral=True)
+        await interaction.followup.send(content=('[ERROR] TimeoutException caught (Basically Heroku sucks)'), ephemeral=True)
     except SessionNotCreatedException as e:
         print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
-        await interaction.response.send_message(content=('[ERROR] Session not created: please notify Adrian to update Chromedriver'), ephemeral=True)
+        await interaction.followup.send(content=('[ERROR] Session not created: please notify Adrian to update Chromedriver'), ephemeral=True)
     except Exception as e:
         if e.__class__ is discord.errors.HTTPException:
             print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
-            await interaction.response.send_message(content=('Error: File too large. Maybe stop sending 12 minute tiktoks?'), ephemeral=True)
+            await interaction.followup.send(content=('Error: File too large. Maybe stop sending 12 minute tiktoks?'), ephemeral=True)
         else:
             print('oopsies\n')
             traceback.print_exc()
-            await interaction.response.send_message(content=('Error: Unknown Error Occured. Don\'t even ping Adrian he\'ll see this... \n', e), ephemeral=True)
+            await interaction.followup.send(content=('Error: Unknown Error Occured. Don\'t even ping Adrian he\'ll see this... \n', e), ephemeral=True)
     finally:
         driver.quit()
 
