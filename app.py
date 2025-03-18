@@ -69,12 +69,15 @@ class MyClient(discord.Client):
 
             driver.get(link)
 
-            if(driver.find_elements(By.CLASS_NAME, "swiper-wrapper")):
-                raise NoSuchElementException    #Enter slideshow flow
+            driver.get_screenshot_as_file("screenshot.png")
+            await message.reply(file=discord.File('screenshot.png'))
 
             # allow page load before continuing
             element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
             # element = driver.find_element(By.TAG_NAME, 'video')
+
+            driver.get_screenshot_as_file("screenshot.png")
+            await message.reply(file=discord.File('screenshot.png'))
 
             print('[DEBUG TRACE] element found\n')
             
