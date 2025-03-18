@@ -69,7 +69,7 @@ class MyClient(discord.Client):
             driver.get(link)
 
             # allow page load before continuing
-            # element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+            # element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
             element = driver.find_element(By.TAG_NAME, 'video')
 
             print('[DEBUG TRACE] element found\n')
@@ -78,9 +78,11 @@ class MyClient(discord.Client):
                 source = element.find_element(By.TAG_NAME, 'source')
                 url = source.get_attribute('src')
                 
-            except (NoSuchElementException, StaleElementReferenceException):
+            except (StaleElementReferenceException):
                 print('[DEBUG TRACE] stale element found in src')
-                url = element.get_attribute('src')
+                element = driver.find_element(By.TAG_NAME, 'video')
+                source = element.find_element(By.TAG_NAME, 'source')
+                url = source.get_attribute('src')
 
             all_cookies = driver.get_cookies()
             cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
@@ -279,6 +281,17 @@ class MyClient(discord.Client):
             else:
                 await self.process_reel(driver, message, headers, spoilerwarning)
 
+        
+        except NoSuchElementException as e:
+            print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
+            try:
+                await self.process_slideshow(driver, message, headers, spoilerwarning)
+            except TimeoutException as e:
+                await message.reply(content=("Failure."), mention_author=True)
+            except Exception as e:
+                print('oopsies\n')
+                traceback.print_exc()
+                await message.reply(content=("idk bot broke lawlz. mature content maybe? xd"), mention_author=True)
         except OSError as e:
             if str(e).startswith('No connection adapters were found for'):
                 print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
@@ -289,16 +302,6 @@ class MyClient(discord.Client):
         except TimeoutException as e:
             print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
             await message.reply('[ERROR] TimeoutException caught (Basically Heroku sucks)')
-        except NoSuchElementException as e:
-            print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
-            try:
-                await self.process_slideshow(driver, message, headers, spoilerwarning)
-            
-            except Exception as e:
-                print('oopsies\n')
-                traceback.print_exc()
-                await message.reply(content=("idk bot broke lawlz. mature content maybe? xd"), mention_author=True)
-
         except SessionNotCreatedException as e:
             print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
             await message.reply('[ERROR] Session not created: please notify Adrian to update Chromedriver')
@@ -309,7 +312,7 @@ class MyClient(discord.Client):
             else:
                 print('oopsies\n')
                 traceback.print_exc()
-                await message.reply(content=('Error: Unknown Error Occured. Don\'t even ping Adrian he\'ll see this... \n' + e), mention_author=True)
+                await message.reply(content=('Error: Unknown Error Occured. Don\'t even ping Adrian he\'ll see this... \n', e), mention_author=True)
         finally:
             driver.quit()
 
