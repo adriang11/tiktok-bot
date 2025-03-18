@@ -397,7 +397,9 @@ async def poll(interaction: discord.Interaction, message: str, choice1: str, cho
         await sent.add_reaction(emojis[i])
 
 @client.tree.command(name = "withcaption", description = "Send tiktok with description")
-async def with_caption(interaction: discord.Interaction, link: str, spoilered: Literal[True, False] = False):
+async def with_caption(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
+    spoiler_warning = spoilered == "true"
+    
     headers = {
             'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36', 
             'Accept-Language':'en-US,en;q=0.9', 
@@ -421,7 +423,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
 
         if link == client.lastlink:
             print(f'[DEBUG TRACE] last link matched: {link}\n')
-            await interaction.response.send_message(file=discord.File('output.mp4', spoiler=spoilered))
+            await interaction.response.send_message(file=discord.File('output.mp4', spoiler=spoiler_warning))
             return
 
         print(f'[DEBUG TRACE] extracted link: {link}\n')
@@ -478,17 +480,17 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
 
             if 'h264' not in log_file_content:
                 os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
-                await interaction.channel.send(file=discord.File('output1.mp4', spoiler=spoilered))
+                await interaction.channel.send(file=discord.File('output1.mp4', spoiler=spoiler_warning))
                 await interaction.channel.send(fulldesc)
                 print('[DEBUG TRACE] file sent, crisis averted\n')
                 await interaction.response.send_message(content=("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know"), ephemeral=True)
                 os.remove('output1.mp4')
             else:
-                await interaction.response.send_message(file=discord.File('output.mp4', spoiler=spoilered))
+                await interaction.response.send_message(file=discord.File('output.mp4', spoiler=spoiler_warning))
                 await interaction.channel.send(fulldesc)
                 print('[DEBUG TRACE] file sent\n')
                 client.lastlink = link
-                os.remove('output.mp4')
+                #os.remove('output.mp4')
         else:
             print(r.status_code, '\n')
             await interaction.response.send_message(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), ephemeral=True)
@@ -529,7 +531,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                     with open(filename, 'wb') as out_file:
                         fnum+=1
                         shutil.copyfileobj(r.raw, out_file)
-                        files.append(discord.File(filename, spoiler=spoilered))
+                        files.append(discord.File(filename, spoiler=spoiler_warning))
                     del r
 
             await interaction.channel.send(files=files)
