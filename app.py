@@ -450,6 +450,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
         except (StaleElementReferenceException):
             print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
             driver.refresh()
+            driver.get(link)
             element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
             source = element.find_element(By.TAG_NAME, 'source')
             url = source.get_attribute('src')
