@@ -69,58 +69,68 @@ class MyClient(discord.Client):
 
             driver.get(link)
 
-            # allow page load before continuing
-            element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
-            # element = driver.find_element(By.TAG_NAME, 'video')
-
-            print('[DEBUG TRACE] element found\n')
-            
             try:
-                source = element.find_element(By.TAG_NAME, 'source') 
-                url = source.get_attribute('src')
+                photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
+
+                if photoscheck:  
+                    print('[DEBUG TRACE] photos found\n')
+                    raise NoSuchElementException
                 
-            except (StaleElementReferenceException):
-                print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
-                driver.refresh()
-                element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
-                source = element.find_element(By.TAG_NAME, 'source')
-                url = source.get_attribute('src')
-
-            all_cookies = driver.get_cookies()
-            cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
-
-            r = requests.get(url, cookies=cookies, headers=headers)
+            except TimeoutException:
+                print('[DEBUG TRACE] Searching for video\n')
             
-            if os.path.exists('output.mp4'):
-                os.remove('output.mp4')
-                print('[DEBUG TRACE] file removed\n')
+                # allow page load before continuing
+                element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+                # element = driver.find_element(By.TAG_NAME, 'video')
 
-            if r.status_code == 200:
-                with open('output.mp4', 'wb') as f:
-                    f.write(r.content)
-                print('[DEBUG TRACE] video downloaded\n')
+                print('[DEBUG TRACE] element found\n')
+                
+                try:
+                    source = element.find_element(By.TAG_NAME, 'source') 
+                    url = source.get_attribute('src')
+                    
+                except (StaleElementReferenceException):
+                    print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
+                    driver.refresh()
+                    element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+                    source = element.find_element(By.TAG_NAME, 'source')
+                    url = source.get_attribute('src')
 
-                # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
-                # os.system("ffmpeg.exe -v error -i output.mp4 -f null - >error.log 2>&1")
-                os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
-                log_file = open("log.txt","r")
-                log_file_content = log_file.read()
-                print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+                all_cookies = driver.get_cookies()
+                cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
 
-                if 'h264' not in log_file_content:
-                    os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
-                    await message.reply(file=discord.File('output1.mp4', spoiler=spoilerwarning))
-                    print('[DEBUG TRACE] file sent, crisis averted\n')
-                    await message.channel.send("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know")
-                    os.remove('output1.mp4')
+                r = requests.get(url, cookies=cookies, headers=headers)
+                
+                if os.path.exists('output.mp4'):
+                    os.remove('output.mp4')
+                    print('[DEBUG TRACE] file removed\n')
+
+                if r.status_code == 200:
+                    with open('output.mp4', 'wb') as f:
+                        f.write(r.content)
+                    print('[DEBUG TRACE] video downloaded\n')
+
+                    # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
+                    # os.system("ffmpeg.exe -v error -i output.mp4 -f null - >error.log 2>&1")
+                    os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
+                    log_file = open("log.txt","r")
+                    log_file_content = log_file.read()
+                    print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+
+                    if 'h264' not in log_file_content:
+                        os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
+                        await message.reply(file=discord.File('output1.mp4', spoiler=spoilerwarning))
+                        print('[DEBUG TRACE] file sent, crisis averted\n')
+                        await message.channel.send("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know")
+                        os.remove('output1.mp4')
+                    else:
+                        await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
+                        print('[DEBUG TRACE] file sent\n')
+                        self.lastlink = link
+                        #os.remove('output.mp4')
                 else:
-                    await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
-                    print('[DEBUG TRACE] file sent\n')
-                    self.lastlink = link
-                    #os.remove('output.mp4')
-            else:
-                print(r.status_code, '\n')
-                await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
+                    print(r.status_code, '\n')
+                    await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
 
             # time.sleep(30)
     
@@ -439,20 +449,32 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
 
         fulldesc = name + ' ' + desc
 
-        element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
-
-        print('[DEBUG TRACE] element found\n')
-        
         try:
-            source = element.find_element(By.TAG_NAME, 'source') 
-            url = source.get_attribute('src')
-            
-        except (StaleElementReferenceException):
-            print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
-            driver.refresh()
+                photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
+
+                if photoscheck:  
+                    print('[DEBUG TRACE] photos found\n')
+                    raise NoSuchElementException
+                
+        except TimeoutException:
+            print('[DEBUG TRACE] Searching for video\n')
+        
+            # allow page load before continuing
             element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
-            source = element.find_element(By.TAG_NAME, 'source')
-            url = source.get_attribute('src')
+            # element = driver.find_element(By.TAG_NAME, 'video')
+
+            print('[DEBUG TRACE] element found\n')
+            
+            try:
+                source = element.find_element(By.TAG_NAME, 'source') 
+                url = source.get_attribute('src')
+                
+            except (StaleElementReferenceException):
+                print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
+                driver.refresh()
+                element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+                source = element.find_element(By.TAG_NAME, 'source')
+                url = source.get_attribute('src')
 
         all_cookies = driver.get_cookies()
         cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
