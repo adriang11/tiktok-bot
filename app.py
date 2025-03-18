@@ -397,7 +397,7 @@ async def poll(interaction: discord.Interaction, message: str, choice1: str, cho
         await sent.add_reaction(emojis[i])
 
 @client.tree.command(name = "withcaption", description = "Send tiktok with description")
-async def with_caption(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
+async def with_caption(interaction: discord.Interaction, link: str, spoilered: Literal[True, False] = False):
     headers = {
             'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36', 
             'Accept-Language':'en-US,en;q=0.9', 
@@ -428,8 +428,17 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
 
         driver.get(link)
 
+        user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@name='description']]")))
+        name = user.get_attribute("content")
+        lst = name.split(' ')
+        for word in lst:
+            if word.startswith("(") and word.endswith(")"):
+                name = word.replace('(','').replace(')','')
+
         meta = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:description']")))
         desc = meta.get_attribute("content")
+
+        fulldesc = name + ': ' + desc
 
         element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
 
@@ -440,10 +449,11 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             url = source.get_attribute('src')
             
         except (StaleElementReferenceException):
-            print('[DEBUG TRACE] stale element found in src\n')
-            newelement = driver.find_element(By.TAG_NAME, 'video')
-            newsource = newelement.find_element(By.TAG_NAME, 'source')
-            url = newsource.get_attribute('src')
+            print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
+            driver.refresh()
+            element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+            source = element.find_element(By.TAG_NAME, 'source')
+            url = source.get_attribute('src')
 
         all_cookies = driver.get_cookies()
         cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
@@ -469,13 +479,13 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             if 'h264' not in log_file_content:
                 os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
                 await interaction.channel.send(file=discord.File('output1.mp4', spoiler=spoilered))
-                await interaction.channel.send(desc)
+                await interaction.channel.send(fulldesc)
                 print('[DEBUG TRACE] file sent, crisis averted\n')
                 await interaction.response.send_message(content=("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know"), ephemeral=True)
                 os.remove('output1.mp4')
             else:
-                await interaction.channel.send(file=discord.File('output.mp4', spoiler=spoilered))
-                await interaction.channel.send(desc)
+                await interaction.response.send_message(file=discord.File('output.mp4', spoiler=spoilered))
+                await interaction.channel.send(fulldesc)
                 print('[DEBUG TRACE] file sent\n')
                 client.lastlink = link
                 os.remove('output.mp4')
@@ -528,7 +538,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                 os.remove(f'img{num}.png')
                 num+=1
             files.clear()
-            await interaction.channel.send(desc)
+            await interaction.channel.send(fulldesc)
             print('[DEBUG TRACE] files cleared\n')
             fnum = 0
         except TimeoutException as e:
