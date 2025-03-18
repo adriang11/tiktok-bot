@@ -437,7 +437,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
         
         print(f'[DEBUG TRACE] Found description\n')
 
-        fulldesc = name + ': ' + desc
+        fulldesc = name + desc
 
         element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
 
@@ -478,13 +478,13 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             if 'h264' not in log_file_content:
                 os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
                 await interaction.followup.send(file=discord.File('output1.mp4', spoiler=spoiler_warning))
-                await interaction.followup.send(fulldesc)
+                await interaction.channel.send(fulldesc)
                 print('[DEBUG TRACE] file sent, crisis averted\n')
                 await interaction.response.send_message(content=("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know"), ephemeral=True)
                 os.remove('output1.mp4')
             else:
                 await interaction.followup.send(file=discord.File('output.mp4', spoiler=spoiler_warning))
-                await interaction.followup.send(fulldesc)
+                await interaction.channel.send(fulldesc)
                 print('[DEBUG TRACE] file sent\n')
                 client.lastlink = link
                 #os.remove('output.mp4')
@@ -515,7 +515,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                     r = requests.get(url, cookies=cookies, headers=headers, stream=True)
                     
                     if len(files) == 9:
-                        await interaction.followup.send(files=files)
+                        await interaction.channel.send(files=files)
                         num = 1
                         for file in files:
                             os.remove(f'img{num}.png')
