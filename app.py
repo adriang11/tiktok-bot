@@ -468,14 +468,14 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
 
             if 'h264' not in log_file_content:
                 os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
-                await interaction.channel.send_message(file=discord.File('output1.mp4', spoiler=spoilered))
-                await interaction.channel.send_message(desc)
+                await interaction.channel.send(file=discord.File('output1.mp4', spoiler=spoilered))
+                await interaction.channel.send(desc)
                 print('[DEBUG TRACE] file sent, crisis averted\n')
                 await interaction.response.send_message(content=("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know"), ephemeral=True)
                 os.remove('output1.mp4')
             else:
-                await interaction.channel.send_message(file=discord.File('output.mp4', spoiler=spoilered))
-                await interaction.channel.send_message(desc)
+                await interaction.channel.send(file=discord.File('output.mp4', spoiler=spoilered))
+                await interaction.channel.send(desc)
                 print('[DEBUG TRACE] file sent\n')
                 client.lastlink = link
                 os.remove('output.mp4')
@@ -528,7 +528,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                 os.remove(f'img{num}.png')
                 num+=1
             files.clear()
-            await interaction.channel.send_message(desc)
+            await interaction.channel.send(desc)
             print('[DEBUG TRACE] files cleared\n')
             fnum = 0
         except TimeoutException as e:
