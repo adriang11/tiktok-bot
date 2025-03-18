@@ -47,7 +47,7 @@ class MyClient(discord.Client):
         print(f'{client.user} is Ready to go!!')
 
     async def web_scrape(self, driver, message, headers, spoilerwarning):
-            print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol')
+            print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
 
             # strip link from message if appicable
             link = message.content
@@ -69,8 +69,8 @@ class MyClient(discord.Client):
             driver.get(link)
 
             # allow page load before continuing
-            # element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
-            element = driver.find_element(By.TAG_NAME, 'video')
+            element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+            # element = driver.find_element(By.TAG_NAME, 'video')
 
             print('[DEBUG TRACE] element found\n')
             
@@ -79,7 +79,7 @@ class MyClient(discord.Client):
                 url = source.get_attribute('src')
                 
             except (StaleElementReferenceException):
-                print('[DEBUG TRACE] stale element found in src')
+                print('[DEBUG TRACE] stale element found in src\n')
                 element = driver.find_element(By.TAG_NAME, 'video')
                 source = element.find_element(By.TAG_NAME, 'source')
                 url = source.get_attribute('src')
