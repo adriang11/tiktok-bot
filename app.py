@@ -437,7 +437,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
         
         print(f'[DEBUG TRACE] Found description\n')
 
-        fulldesc = name + ': ' + desc
+        fulldesc = name + desc
 
         element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
 
@@ -515,7 +515,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                     r = requests.get(url, cookies=cookies, headers=headers, stream=True)
                     
                     if len(files) == 9:
-                        await interaction.followup.send(files=files)
+                        await interaction.channel.send(files=files)
                         num = 1
                         for file in files:
                             os.remove(f'img{num}.png')
