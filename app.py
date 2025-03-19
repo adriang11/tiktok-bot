@@ -323,7 +323,8 @@ class MyClient(discord.Client):
             else:
                 print('oopsies\n')
                 traceback.print_exc()
-                await message.reply(content=('Error: Unknown Error Occured. Don\'t even ping Adrian he\'ll see this... \n', e), mention_author=True)
+                feedback = 'Error: Unknown Error Occured. Don\'t even ping Adrian he\'ll see this... \n' + e
+                await message.reply(content=(feedback), mention_author=True)
         finally:
             driver.quit()
 
@@ -346,7 +347,6 @@ async def coinflip(interaction: discord.Interaction):
         await interaction.response.send_message("Heads!")
     else:
         await interaction.response.send_message("Tails!")
-    
 
 @client.tree.command(name = "wisdom", description = "Receive a random wisdom from Pascal the Sea Otter") 
 async def daily_wisdom(interaction: discord.Interaction):
@@ -564,7 +564,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             await interaction.channel.send(fulldesc)
             print('[DEBUG TRACE] files cleared\n')
             fnum = 0
-            await interaction.followup.send(content=("Welcome to the shadow realm"), ephemeral=True)
+            await interaction.followup.send(content=('<' + link + '>'), ephemeral=True)
         except TimeoutException as e:
             await interaction.followup.send(content=("Failure."), ephemeral=True)
         except Exception as e:
