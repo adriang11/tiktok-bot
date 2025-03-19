@@ -433,13 +433,17 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
 
         driver.get(link)
 
-        user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@name='description']")))
-        name = user.get_attribute("content")
-        lst = name.split(' ')
+        user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
+        url = user.get_attribute("content")
+        lst = url.split('/')
         for word in lst:
-            if word.startswith("(") and word.endswith(":"):
-                name = word.replace('(','').replace(')','')
-        
+            if word.startswith("@"):
+                username = word
+        if username == '@11adrian19':
+            await interaction.followup.send(link)
+            await interaction.followup.send("No free views")
+            return
+
         print(f'[DEBUG TRACE] Found username\n')
 
         meta = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:description']")))
@@ -447,7 +451,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
         
         print(f'[DEBUG TRACE] Found description\n')
 
-        fulldesc = name + ' ' + desc
+        fulldesc = username + ': ' + desc
 
         try:
                 photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
