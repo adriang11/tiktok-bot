@@ -69,6 +69,16 @@ class MyClient(discord.Client):
 
             driver.get(link)
 
+            user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
+            url = user.get_attribute("content")
+            lst = url.split('/')
+            for word in lst:
+                if word.startswith("@"):
+                    username = word
+            if username == '@11adrian19':
+                await message.reply("No free views")
+                return
+
             try:
                 photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
 
@@ -440,7 +450,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             if word.startswith("@"):
                 username = word
         if username == '@11adrian19':
-            await interaction.followup.send(link)
+            await interaction.followup.send('<' + link + '>')
             await interaction.followup.send("No free views")
             return
 
