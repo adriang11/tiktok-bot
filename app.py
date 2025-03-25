@@ -104,9 +104,6 @@ class MyClient(discord.Client):
             except TimeoutException:
                 print('[DEBUG TRACE] Searching for video\n')
 
-                driver.get_screenshot_as_file("screenshot.png")
-                await message.reply(file=discord.File('screenshot.png'))
-
                 element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
             
                 print('[DEBUG TRACE] element found\n')
@@ -337,7 +334,7 @@ class MyClient(discord.Client):
                 await message.reply('Bot is working on another thing. Count to 10 and try again.')
         except TimeoutException as e:
             print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
-            await message.reply('[ERROR] TimeoutException caught: slideshows no working no more')
+            await message.reply('[ERROR] TimeoutException caught: slideshows no working no more idk why')
         except SessionNotCreatedException as e:
             print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
             await message.reply('[ERROR] Session not created: please notify Adrian to update Chromedriver')
