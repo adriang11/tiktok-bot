@@ -69,6 +69,19 @@ class MyClient(discord.Client):
 
             driver.get(link)
 
+            # Run Prechecks
+            try:
+                maturecontent = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'p')))
+                for words in maturecontent:
+                    if words.text == 'Log in to TikTok':
+                        print(f'[DEBUG TRACE] Mature content detected\n')
+                        await message.reply("Mature Content Detected. Gotta go to the app for this one buddy")
+                        return
+            except:
+                pass
+
+            print(f'[DEBUG TRACE] No mature content detected\n')
+
             user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
             url = user.get_attribute("content")
             lst = url.split('/')
@@ -78,21 +91,24 @@ class MyClient(discord.Client):
             if username == '@11adrian19':
                 await message.reply("No free views")
                 return
+            
+            print(f'[DEBUG TRACE] View stealing protected\n')
 
             try:
                 photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
 
                 if photoscheck:  
-                    print('[DEBUG TRACE] photos found\n')
+                    print('[DEBUG TRACE] Photos found\n')
                     raise NoSuchElementException
                 
             except TimeoutException:
                 print('[DEBUG TRACE] Searching for video\n')
-            
-                # allow page load before continuing
-                element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
-                # element = driver.find_element(By.TAG_NAME, 'video')
 
+                driver.get_screenshot_as_file("screenshot.png")
+                await message.reply(file=discord.File('screenshot.png'))
+
+                element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+            
                 print('[DEBUG TRACE] element found\n')
                 
                 try:
@@ -121,7 +137,6 @@ class MyClient(discord.Client):
                     print('[DEBUG TRACE] video downloaded\n')
 
                     # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
-                    # os.system("ffmpeg.exe -v error -i output.mp4 -f null - >error.log 2>&1")
                     os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
                     log_file = open("log.txt","r")
                     log_file_content = log_file.read()
@@ -322,7 +337,7 @@ class MyClient(discord.Client):
                 await message.reply('Bot is working on another thing. Count to 10 and try again.')
         except TimeoutException as e:
             print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
-            await message.reply('[ERROR] TimeoutException caught (Basically Heroku sucks)')
+            await message.reply('[ERROR] TimeoutException caught: slideshows no working no more')
         except SessionNotCreatedException as e:
             print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
             await message.reply('[ERROR] Session not created: please notify Adrian to update Chromedriver')
@@ -333,7 +348,7 @@ class MyClient(discord.Client):
             else:
                 print('oopsies\n')
                 traceback.print_exc()
-                feedback = 'Error: Unknown Error Occured. Don\'t even ping Adrian he\'ll see this... \n' + e
+                feedback = 'Error: Unknown Error Occured.\nDon\'t even ping Adrian he\'ll see this... \n' + str(e)
                 await message.reply(content=(feedback), mention_author=True)
         finally:
             driver.quit()
@@ -594,7 +609,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             await interaction.followup.send(content=('Bot is working on another thing. Count to 10 and try again.'), ephemeral=True)
     except TimeoutException as e:
         print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
-        await interaction.followup.send(content=('[ERROR] TimeoutException caught (Basically Heroku sucks)'), ephemeral=True)
+        await interaction.followup.send(content=('[ERROR] TimeoutException caught (Couldn\'t find video or slideshow'), ephemeral=True)
     except SessionNotCreatedException as e:
         print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
         await interaction.followup.send(content=('[ERROR] Session not created: please notify Adrian to update Chromedriver'), ephemeral=True)
@@ -605,7 +620,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
         else:
             print('oopsies\n')
             traceback.print_exc()
-            await interaction.followup.send(content=('Error: Unknown Error Occured. Don\'t even ping Adrian he\'ll see this... \n', e), ephemeral=True)
+            await interaction.followup.send(content=('Error: Unknown Error Occured.\nDon\'t even ping Adrian he\'ll see this... \n', e), ephemeral=True)
     finally:
         driver.quit()
 
