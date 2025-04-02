@@ -328,7 +328,7 @@ class MyClient(discord.Client):
         except OSError as e:
             if str(e).startswith('No connection adapters were found for'):
                 print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-                await message.reply('uummm')
+                #await message.reply('uummm')
             else:
                 print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
                 await message.reply('Bot is working on another thing. Count to 10 and try again.')
@@ -600,7 +600,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
     except OSError as e:
         if str(e).startswith('No connection adapters were found for'):
             print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-            await interaction.followup.send(content=('uummm'), ephemeral=True)
+            #await interaction.followup.send(content=('uummm'), ephemeral=True)
         else:
             print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
             await interaction.followup.send(content=('Bot is working on another thing. Count to 10 and try again.'), ephemeral=True)
