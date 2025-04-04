@@ -418,7 +418,7 @@ async def test_command(interaction: discord.Interaction):
 
 @client.tree.command(name = "fortune", description = "Tells you a special fortune you need to hear") #using to determine version deployed on heroku
 async def fortune(interaction: discord.Interaction):
-    await interaction.response.send_message("I was meant to be new... I was meant to be beautiful")
+    await interaction.response.send_message("You are destined to pick the lowest hanging fruit")
 
 @client.tree.command(name = "coinflip", description = "flips a coin") 
 async def coinflip(interaction: discord.Interaction):
@@ -457,7 +457,7 @@ async def divs_wisdom3(interaction: discord.Interaction):
 
 @client.tree.command(name = "toggle", description = "Toggle acronym troll on/off") 
 async def toggle(interaction: discord.Interaction):
-    tog = client.acronym_check()
+    tog = client.acronym_toggle()
     response = "Acronym Troll Mode set to " + str(tog)
     await interaction.response.send_message(response)
 
