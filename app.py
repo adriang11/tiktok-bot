@@ -303,11 +303,19 @@ class MyClient(discord.Client):
                         'wtf':'wtf = what the fuck btw',
                         'wth':'wth = what the hell btw',
                         'pyo':'pyo = put you on btw',
-                        'mrt':'mrt = my ranked teammates btw'
+                        'mrt':'mrt = my ranked teammates btw',
+                        'tf':'tf = the fuck btw',
+                        'kys':'kys = kill yourself btw',
+                        'swe':'swe = software engineer btw',
+                        'ddiym':'ddiym = dis dick in your mouth btw',
+                        'yk':'yk = you know btw',
+                        'iykyk':'iykyk = if you know you know btw',
+                        'sybau':'sybau = shut yo bitch ass up btw'
                         }
         
         for word in message.content.split():
-            if word.strip('?').lower() in acronym_list:
+            word = word.strip('?').lower()
+            if word in acronym_list:
                 await message.reply(acronym_list[word])
                 return True
         
