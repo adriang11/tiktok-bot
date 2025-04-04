@@ -273,14 +273,56 @@ class MyClient(discord.Client):
             else:
                 print(r.status_code, '\n')
                 await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
-
+    
+    async def acronym_check(self, message):
+        acronym_list = {'idk':'idk = i don\'t know btw',
+                        'lol':'lol = laugh out loud btw',
+                        'btw':'btw = by the way',
+                        'wfh':'wfh = work from home btw',
+                        'ppl':'ppl = people btw',
+                        'fyi':'fyi = for your information btw',
+                        'asap':'asap = as soon as possible btw',
+                        'tft':'tft = teamfight tactics btw',
+                        'fomo':'fomo = fear of missing out btw',
+                        'mfw':'mfw = my face when btw',
+                        'lmao':'lmao = laughing my ass off btw',
+                        'idc':'idc = i don\'t care btw',
+                        'ts':'ts = this shit btw',
+                        'pmo':'pmo = pissing me off btw',
+                        'icl':'icl = i can\'t lie btw',
+                        'ong':'ong = on gaga btw',
+                        'rn':'rn = right now btw',
+                        'idek':'idek =  don\'t even know btw',
+                        'fr':'fr = for real btw',
+                        'srs':'srs = serious btw',
+                        'lmk':'lmk = let me know btw',
+                        'atp':'atp = at this point btw',
+                        'nvm':'nvm = nevermind btw',
+                        'brb':'brb = be right back btw',
+                        'smh':'smh = shaking my head btw',
+                        'wtf':'wtf = what the fuck btw',
+                        'wth':'wth = what the hell btw',
+                        'pyo':'pyo = put you on btw',
+                        'mrt':'mrt = my ranked teammates btw'
+                        }
+        
+        for word in message.content.split():
+            if word.strip('?').lower() in acronym_list:
+                await message.reply(acronym_list[word])
+                return True
+        
+        return False
 
     async def on_message(self, message):
         spoilerwarning = False
         
+
         if message.author.id == self.user.id:
             return
         
+        test = await self.acronym_check(message)
+        if test: return
+
         if '.tiktok.com/' not in message.content and 'instagram.com/reel' not in message.content:
             return
 
