@@ -457,7 +457,7 @@ async def divs_wisdom3(interaction: discord.Interaction):
 
 @client.tree.command(name = "toggle", description = "Toggle acronym troll on/off") 
 async def toggle(interaction: discord.Interaction):
-    tog = client.acronym_toggle()
+    tog = await client.acronym_toggle()
     response = "Acronym Troll Mode set to " + str(tog)
     await interaction.response.send_message(response)
 
