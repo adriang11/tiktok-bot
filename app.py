@@ -31,6 +31,7 @@ class MyClient(discord.Client):
         self.synced = False
         self.tree = app_commands.CommandTree(self)
         self.lastlink = ""
+        self.toggle = False
     
     async def on_ready(self):
         await self.wait_until_ready()
@@ -46,6 +47,13 @@ class MyClient(discord.Client):
         # await degens.send('I am alive and capable of feeling.')
         # await ducklings.send('I am alive and capable of feeling.')
         print(f'{client.user} is Ready to go!!')
+    
+    async def acronym_toggle(self):
+        if not self.toggle:
+            self.toggle = True
+        else:
+            self.toggle = False
+        return self.toggle
 
     async def web_scrape(self, driver, message, headers, spoilerwarning):
             print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
@@ -273,7 +281,7 @@ class MyClient(discord.Client):
             else:
                 print(r.status_code, '\n')
                 await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
-    
+
     async def acronym_check(self, message):
         acronym_list = {'idk':'idk = i don\'t know btw',
                         'lol':'lol = laugh out loud btw',
@@ -303,11 +311,19 @@ class MyClient(discord.Client):
                         'wtf':'wtf = what the fuck btw',
                         'wth':'wth = what the hell btw',
                         'pyo':'pyo = put you on btw',
-                        'mrt':'mrt = my ranked teammates btw'
+                        'mrt':'mrt = my ranked teammates btw',
+                        'tf':'tf = the fuck btw',
+                        'kys':'kys = kill yourself btw',
+                        'swe':'swe = software engineer btw',
+                        'ddiym':'ddiym = dis dick in your mouth btw',
+                        'yk':'yk = you know btw',
+                        'iykyk':'iykyk = if you know you know btw',
+                        'sybau':'sybau = shut yo bitch ass up btw'
                         }
         
         for word in message.content.split():
-            if word.strip('?').lower() in acronym_list:
+            word = word.strip('?').lower()
+            if word in acronym_list:
                 await message.reply(acronym_list[word])
                 return True
         
@@ -315,13 +331,13 @@ class MyClient(discord.Client):
 
     async def on_message(self, message):
         spoilerwarning = False
-        
 
         if message.author.id == self.user.id:
             return
         
-        test = await self.acronym_check(message)
-        if test: return
+        if self.toggle:
+            test = await self.acronym_check(message)
+            if test: return
 
         if '.tiktok.com/' not in message.content and 'instagram.com/reel' not in message.content:
             return
@@ -438,6 +454,12 @@ async def divs_wisdom3(interaction: discord.Interaction):
     fd.close()
     print("Wisdom sent: ", wisdom)
     await interaction.response.send_message(wisdom)
+
+@client.tree.command(name = "toggle", description = "Toggle acronym troll on/off") 
+async def toggle(interaction: discord.Interaction):
+    tog = client.toggle()
+    response = "Acronym Troll Mode set to " + str(tog)
+    await interaction.response.send_message(response)
 
 @client.tree.command(name = "poll", description = "Creates a poll") 
 async def poll(interaction: discord.Interaction, message: str, choice1: str, choice2: str, choice3: Optional[str], choice4: Optional[str], choice5: Optional[str], choice6: Optional[str], choice7: Optional[str], choice8: Optional[str], choice9: Optional[str], choice10: Optional[str]):
