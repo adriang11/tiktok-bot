@@ -297,6 +297,7 @@ class MyClient(discord.Client):
                 'fr':'fr = for real btw',
                 'fc':'fc = freaky chicken btw',
                 'fyi':'fyi = for your information btw',
+                'hbt':'hbt = how bout that btw',
                 'icl':'icl = i can\'t lie btw',
                 'idc':'idc = i don\'t care btw',
                 'idrc':'idrc = i really don\'t care btw',
