@@ -313,6 +313,7 @@ class MyClient(discord.Client):
                 'kys':'kys = kill yourself btw',
                 'lfg':'lfg = let\'s fucking go btw',
                 'lmao':'lmao = laughing my ass off btw',
+                'lmfao':'lmfao = laughing my fucking ass off btw',
                 'lmk':'lmk = let me know btw',
                 'lol':'lol = laugh out loud btw',
                 'mf':'mf = motherfucker btw',
@@ -324,6 +325,7 @@ class MyClient(discord.Client):
                 'obv':'obv = obviously btw',
                 'ong':'ong = on gaga btw',
                 'omg':'omg = oh my god btw',
+                'omw':'omw = on my way btw',
                 'pmo':'pmo = pissing me off btw',
                 'ppl':'ppl = people btw',
                 'pyo':'pyo = put you on btw',
@@ -331,8 +333,12 @@ class MyClient(discord.Client):
                 'smh':'smh = shaking my head btw',
                 'smfh':'smh = shaking my fucking head btw',
                 'srs':'srs = serious btw',
+                'stfu':'stfu = shut the fuck up btw',
                 'swe':'swe = software engineer btw',
                 'sybau':'sybau = shut yo bitch ass up btw',
+                'tbh':'tbh = to be honest btw',
+                'tbf':'tbf = to be fair btw',
+                'tf':'tf = the fuck btw',
                 'tf':'tf = the fuck btw',
                 'tft':'tft = teamfight tactics btw',
                 'tldr':'tldr = too long didn\'t read btw',
@@ -346,6 +352,7 @@ class MyClient(discord.Client):
                 'wym':'wym = what you mean btw',
                 'wdym':'wdym = what do you mean btw',
                 'yk':'yk = you know btw',
+                'yt':'yt = white btw'
             }
         
         for word in message.content.split():
