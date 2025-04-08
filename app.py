@@ -18,6 +18,8 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
+from statics import acronym_list
+from statics import headers
 from typing import Optional
 from typing import Literal
 
@@ -283,78 +285,6 @@ class MyClient(discord.Client):
                 await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
 
     async def acronym_check(self, message):
-        acronym_list = {
-                'ai':'ai = rohan btw',
-                'atp':'atp = at this point btw',
-                'asap':'asap = as soon as possible btw',
-                'bffr':'bffr = be fucking for real btw',
-                'brb':'brb = be right back btw',
-                'btw':'btw = by the way',
-                'cba':'cba = can\'t be asked btw',
-                'cgi':'cgi = computer generated imagery btw',
-                'ddiym':'ddiym = dis dick in your mouth btw',
-                'fomo':'fomo = fear of missing out btw',
-                'fr':'fr = for real btw',
-                'fc':'fc = freaky chicken btw',
-                'fyi':'fyi = for your information btw',
-                'hbt':'hbt = how bout that btw',
-                'icl':'icl = i can\'t lie btw',
-                'idc':'idc = i don\'t care btw',
-                'idrc':'idrc = i really don\'t care btw',
-                'idr':'idr = i don\'t remember btw',
-                'iirc':'iirc = if i recall correctly btw',
-                'idek':'idek = i don\'t even know btw',
-                'idgi':'idgi = i don\'t get it btw',
-                'idgaf':'idgaf = i don\'t give a fuck btw',
-                'idk':'idk = i don\'t know btw',
-                'irl':'irl = in real life btw',
-                'iykyk':'iykyk = if you know you know btw',
-                'js':'js = just btw',
-                'kys':'kys = kill yourself btw',
-                'lfg':'lfg = let\'s fucking go btw',
-                'lmao':'lmao = laughing my ass off btw',
-                'lmfao':'lmfao = laughing my fucking ass off btw',
-                'lmk':'lmk = let me know btw',
-                'lol':'lol = laugh out loud btw',
-                'mf':'mf = motherfucker btw',
-                'mfs':'mfs = motherfuckers btw',
-                'mfw':'mfw = my face when btw',
-                'mrt':'mrt = my ranked teammates btw',
-                'ngl':'ngl = not gonna lie btw',
-                'nvm':'nvm = nevermind btw',
-                'obv':'obv = obviously btw',
-                'ong':'ong = on gaga btw',
-                'omg':'omg = oh my god btw',
-                'omw':'omw = on my way btw',
-                'pmo':'pmo = pissing me off btw',
-                'ppl':'ppl = people btw',
-                'pyo':'pyo = put you on btw',
-                'rn':'rn = right now btw',
-                'smh':'smh = shaking my head btw',
-                'smfh':'smh = shaking my fucking head btw',
-                'srs':'srs = serious btw',
-                'stfu':'stfu = shut the fuck up btw',
-                'swe':'swe = software engineer btw',
-                'sybau':'sybau = shut yo bitch ass up btw',
-                'tbh':'tbh = to be honest btw',
-                'tbf':'tbf = to be fair btw',
-                'tf':'tf = the fuck btw',
-                'tf':'tf = the fuck btw',
-                'tft':'tft = teamfight tactics btw',
-                'tldr':'tldr = too long didn\'t read btw',
-                'tldw':'tldw = too long didn\'t watch btw',
-                'tn':'tn = tonight btw',
-                'ts':'ts = this shit btw',
-                'wfh':'wfh = work from home btw',
-                'wtf':'wtf = what the fuck btw',
-                'wth':'wth = what the hell btw',
-                'wtw':'wtw = there is no wave sybau',
-                'wym':'wym = what you mean btw',
-                'wdym':'wdym = what do you mean btw',
-                'yk':'yk = you know btw',
-                'yt':'yt = white btw'
-            }
-        
         for word in message.content.split():
             word = word.strip('?.[]()1234567890!@#$%^&*,').lower()
             if word in acronym_list:
@@ -378,14 +308,6 @@ class MyClient(discord.Client):
 
         if message.content.startswith("||") and message.content.endswith("||"):
             spoilerwarning = True
-
-        headers = {
-            'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36', 
-            'Accept-Language':'en-US,en;q=0.9', 
-            'Accept-Encoding':'gzip, deflate, br',
-            'Accept':'text/html,application/x-protobuf,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Referer':'https://www.tiktok.com/'
-        }
 
         service = Service(executable_path=CHROME_DRIVER_PATH)
 
@@ -531,14 +453,6 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
     await interaction.response.defer()
     
     spoiler_warning = spoilered == "true"
-    
-    headers = {
-            'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36', 
-            'Accept-Language':'en-US,en;q=0.9', 
-            'Accept-Encoding':'gzip, deflate, br',
-            'Accept':'text/html,application/x-protobuf,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Referer':'https://www.tiktok.com/'
-        }
 
     options = webdriver.ChromeOptions()
     options.add_argument('--headless=new')
