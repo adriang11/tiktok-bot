@@ -34,6 +34,7 @@ class MyClient(discord.Client):
         self.tree = app_commands.CommandTree(self)
         self.lastlink = ""
         self.toggle = False
+        self.debugmode = False
     
     async def on_ready(self):
         await self.wait_until_ready()
@@ -92,6 +93,10 @@ class MyClient(discord.Client):
 
             print(f'[DEBUG TRACE] No mature content detected\n')
 
+            if self.debugmode: 
+                driver.get_screenshot_as_file("screenshot.png")
+                await message.reply(file=discord.File('screenshot.png'))
+
             user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
             url = user.get_attribute("content")
             lst = url.split('/')
@@ -105,7 +110,15 @@ class MyClient(discord.Client):
             print(f'[DEBUG TRACE] View stealing protected\n')
 
             try:
+                if self.debugmode: 
+                    driver.get_screenshot_as_file("screenshot.png")
+                    await message.reply(file=discord.File('screenshot.png'))
+
                 photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
+
+                if self.debugmode: 
+                    driver.get_screenshot_as_file("screenshot.png")
+                    await message.reply(file=discord.File('screenshot.png'))
 
                 if photoscheck:  
                     print('[DEBUG TRACE] Photos found\n')
@@ -117,6 +130,10 @@ class MyClient(discord.Client):
                 element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
             
                 print('[DEBUG TRACE] element found\n')
+
+                if self.debugmode: 
+                    driver.get_screenshot_as_file("screenshot.png")
+                    await message.reply(file=discord.File('screenshot.png'))
                 
                 try:
                     source = element.find_element(By.TAG_NAME, 'source') 
@@ -169,8 +186,9 @@ class MyClient(discord.Client):
     async def process_slideshow(self, driver, message, headers, spoilerwarning):
                 print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
 
-                # driver.get_screenshot_as_file("screenshot.png")
-                # await message.reply(file=discord.File('screenshot.png'))
+                if self.debugmode: 
+                    driver.get_screenshot_as_file("screenshot.png")
+                    await message.reply(file=discord.File('screenshot.png'))
 
                 wrapper = WebDriverWait(driver, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
                 print(f'[DEBUG TRACE] wrapper found\n')
@@ -178,6 +196,10 @@ class MyClient(discord.Client):
                 print(f'[DEBUG TRACE] div found\n')
                 # divs = wrapper.find_elements(By.TAG_NAME, 'div')
                 
+                if self.debugmode: 
+                    driver.get_screenshot_as_file("screenshot.png")
+                    await message.reply(file=discord.File('screenshot.png'))
+
                 files = []
                 found = []
                 fnum = 0
@@ -324,8 +346,8 @@ class MyClient(discord.Client):
         try:
             if '.tiktok.com/' in message.content:
                 await self.web_scrape(driver, message, headers, spoilerwarning)
-            else:
-                await self.process_reel(driver, message, headers, spoilerwarning)
+            # else:
+                #await self.process_reel(driver, message, headers, spoilerwarning)
 
         
         except NoSuchElementException as e:
