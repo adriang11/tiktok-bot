@@ -51,12 +51,20 @@ class MyClient(discord.Client):
         # await ducklings.send('I am alive and capable of feeling.')
         print(f'{client.user} is Ready to go!!')
     
-    async def acronym_toggle(self):
-        if not self.toggle:
-            self.toggle = True
-        else:
-            self.toggle = False
-        return self.toggle
+    async def toggler(self, attribute):
+        if attribute == 'acronym':
+            if not self.toggle:
+                self.toggle = True
+            else:
+                self.toggle = False
+            return self.toggle
+        if attribute == 'debug':
+            if not self.debugmode:
+                self.debugmode = True
+            else:
+                self.debugmode = False
+            return self.debugmode
+        
 
     async def web_scrape(self, driver, message, headers, spoilerwarning):
             print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
@@ -95,7 +103,7 @@ class MyClient(discord.Client):
 
             if self.debugmode: 
                 driver.get_screenshot_as_file("screenshot.png")
-                await message.reply(file=discord.File('screenshot.png'))
+                await message.reply("1 - After Pre-checks:", file=discord.File('screenshot.png'))
 
             user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
             url = user.get_attribute("content")
@@ -112,13 +120,9 @@ class MyClient(discord.Client):
             try:
                 if self.debugmode: 
                     driver.get_screenshot_as_file("screenshot.png")
-                    await message.reply(file=discord.File('screenshot.png'))
+                    await message.reply("2 - After Metadata:", file=discord.File('screenshot.png'))
 
-                photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
-
-                if self.debugmode: 
-                    driver.get_screenshot_as_file("screenshot.png")
-                    await message.reply(file=discord.File('screenshot.png'))
+                photoscheck = WebDriverWait(driver, 15).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
 
                 if photoscheck:  
                     print('[DEBUG TRACE] Photos found\n')
@@ -127,13 +131,17 @@ class MyClient(discord.Client):
             except TimeoutException:
                 print('[DEBUG TRACE] Searching for video\n')
 
+                if self.debugmode: 
+                    driver.get_screenshot_as_file("screenshot.png")
+                    await message.reply("3 - After Photos Check (No Slideshow Detected):", file=discord.File('screenshot.png'))
+
                 element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
             
                 print('[DEBUG TRACE] element found\n')
 
                 if self.debugmode: 
                     driver.get_screenshot_as_file("screenshot.png")
-                    await message.reply(file=discord.File('screenshot.png'))
+                    await message.reply("4 - Video element detected:", file=discord.File('screenshot.png'))
                 
                 try:
                     source = element.find_element(By.TAG_NAME, 'source') 
@@ -370,7 +378,7 @@ class MyClient(discord.Client):
                 await message.reply('Bot is working on another thing. Count to 10 and try again.')
         except TimeoutException as e:
             print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
-            await message.reply('[ERROR] TimeoutException caught: slideshows no working no more idk why')
+            await message.reply('[ERROR] TimeoutException caught: I have failed.')
         except SessionNotCreatedException as e:
             print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
             await message.reply('[ERROR] Session not created: please notify Adrian to update Chromedriver')
@@ -396,7 +404,7 @@ async def test_command(interaction: discord.Interaction):
 
 @client.tree.command(name = "fortune", description = "Tells you a special fortune you need to hear") #using to determine version deployed on heroku
 async def fortune(interaction: discord.Interaction):
-    await interaction.response.send_message("You are destined to pick the lowest hanging fruit")
+    await interaction.response.send_message("MI BOMBO!!")
 
 @client.tree.command(name = "coinflip", description = "flips a coin") 
 async def coinflip(interaction: discord.Interaction):
@@ -435,8 +443,14 @@ async def divs_wisdom3(interaction: discord.Interaction):
 
 @client.tree.command(name = "toggle", description = "Toggle acronym troll on/off") 
 async def toggle(interaction: discord.Interaction):
-    tog = await client.acronym_toggle()
-    response = "Acronym Troll Mode set to " + str(tog)
+    tog = await client.toggler('acronym')
+    response = "Acronym Help Mode set to " + str(tog)
+    await interaction.response.send_message(response)
+
+@client.tree.command(name = "debug", description = "Toggle debug mode on/off") 
+async def debug(interaction: discord.Interaction):
+    tog = await client.toggler('debug')
+    response = "Debug Mode set to " + str(tog)
     await interaction.response.send_message(response)
 
 @client.tree.command(name = "poll", description = "Creates a poll") 
