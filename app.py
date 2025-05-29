@@ -43,12 +43,14 @@ class MyClient(discord.Client):
             self.synced = True
 
         await self.change_presence(activity=discord.Game(name="League of Legends"))
-        dungeon = client.get_channel(1149980884523556915)
-        degens = client.get_channel(752401958647890108)
-        ducklings = client.get_channel(915088526129909842)
+
+        dungeon = client.get_channel(os.getenv('DUNGEON'))
+        degens = client.get_channel(os.getenv('DEGENS'))
+        ducklings = client.get_channel(os.getenv('DUCKLINGS'))
         # await dungeon.send('I am alive and capable of feeling.')
         # await degens.send('I am alive and capable of feeling.')
         # await ducklings.send('I am alive and capable of feeling.')
+
         print(f'{client.user} is Ready to go!!')
     
     async def toggler(self, attribute):
@@ -385,7 +387,7 @@ class MyClient(discord.Client):
         except Exception as e:
             if e.__class__ is discord.errors.HTTPException:
                 print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
-                await message.reply(content=('Error: File too large. Maybe stop sending 12 minute tiktoks?'), mention_author=True)
+                await message.reply(content=('I just... I just can\'t anymore. I\'m sorry'), mention_author=True)
             else:
                 print('oopsies\n')
                 traceback.print_exc()
@@ -404,7 +406,7 @@ async def test_command(interaction: discord.Interaction):
 
 @client.tree.command(name = "fortune", description = "Tells you a special fortune you need to hear") #using to determine version deployed on heroku
 async def fortune(interaction: discord.Interaction):
-    await interaction.response.send_message("MI BOMBO!!")
+    await interaction.response.send_message("Do you know why a shark keeps swimming?")
 
 @client.tree.command(name = "coinflip", description = "flips a coin") 
 async def coinflip(interaction: discord.Interaction):
