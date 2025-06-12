@@ -355,7 +355,8 @@ class MyClient(discord.Client):
 
         try:
             if '.tiktok.com/' in message.content:
-                await self.web_scrape(driver, message, headers, spoilerwarning)
+                return
+                #await self.web_scrape(driver, message, headers, spoilerwarning)
             # else:
                 #await self.process_reel(driver, message, headers, spoilerwarning)
 
