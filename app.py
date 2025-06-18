@@ -356,10 +356,9 @@ class MyClient(discord.Client):
         try:
             if '.tiktok.com/' in message.content:
                 await self.web_scrape(driver, message, headers, spoilerwarning)
-            else:
+            #else:
                 #await self.process_reel(driver, message, headers, spoilerwarning)
-
-        
+   
         except NoSuchElementException as e:
             print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
             try:
