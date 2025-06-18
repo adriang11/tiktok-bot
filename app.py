@@ -124,7 +124,7 @@ class MyClient(discord.Client):
                     driver.get_screenshot_as_file("screenshot.png")
                     await message.reply("2 - After Metadata:", file=discord.File('screenshot.png'))
 
-                photoscheck = WebDriverWait(driver, 15).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
+                photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
 
                 if photoscheck:  
                     print('[DEBUG TRACE] Photos found\n')
@@ -355,10 +355,9 @@ class MyClient(discord.Client):
 
         try:
             if '.tiktok.com/' in message.content:
-                return
-                #await self.web_scrape(driver, message, headers, spoilerwarning)
-            # else:
-                #await self.process_reel(driver, message, headers, spoilerwarning)
+                await self.web_scrape(driver, message, headers, spoilerwarning)
+            else:
+                await self.process_reel(driver, message, headers, spoilerwarning)
 
         
         except NoSuchElementException as e:
@@ -367,11 +366,11 @@ class MyClient(discord.Client):
                 await self.process_slideshow(driver, message, headers, spoilerwarning)
             except TimeoutException as e:
                 print(f'[DEBUG TRACE] TimeoutException: ', e, '\n')
-                await message.reply(content=("Failure."), mention_author=True)
+                await message.reply(content=("Failure."), mention_author=True, delete_after=10)
             except Exception as e:
                 print('oopsies\n')
                 traceback.print_exc()
-                await message.reply(content=("idk bot broke lawlz. mature content maybe? xd"), mention_author=True)
+                await message.reply(content=("idk bot broke lawlz. mature content maybe? xd"), mention_author=True, delete_after=10)
         except OSError as e:
             if str(e).startswith('No connection adapters were found for'):
                 print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
@@ -388,7 +387,7 @@ class MyClient(discord.Client):
         except Exception as e:
             if e.__class__ is discord.errors.HTTPException:
                 print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
-                await message.reply(content=('I just... I just can\'t anymore. I\'m sorry'), mention_author=True)
+                await message.reply(content=('I just... I just can\'t anymore. I\'m sorry'), mention_author=True, delete_after=10)
             else:
                 print('oopsies\n')
                 traceback.print_exc()
@@ -407,7 +406,7 @@ async def test_command(interaction: discord.Interaction):
 
 @client.tree.command(name = "fortune", description = "Tells you a special fortune you need to hear") #using to determine version deployed on heroku
 async def fortune(interaction: discord.Interaction):
-    await interaction.response.send_message("Do you know why a shark keeps swimming?")
+    await interaction.response.send_message("Everyone is alive. Very few are living.")
 
 @client.tree.command(name = "coinflip", description = "flips a coin") 
 async def coinflip(interaction: discord.Interaction):
