@@ -365,11 +365,15 @@ class MyClient(discord.Client):
                 await self.process_slideshow(driver, message, headers, spoilerwarning)
             except TimeoutException as e:
                 print(f'[DEBUG TRACE] TimeoutException: ', e, '\n')
-                await message.reply(content=("Failure."), mention_author=True, delete_after=10)
+                # retry logic:
+                try:
+                    await self.web_scrape(driver, message, headers, spoilerwarning)
+                except:
+                    await message.reply(content=("Failure."), mention_author=True, delete_after=30)
             except Exception as e:
                 print('oopsies\n')
                 traceback.print_exc()
-                await message.reply(content=("idk bot broke lawlz. mature content maybe? xd"), mention_author=True, delete_after=10)
+                await message.reply(content=("idk bot broke lawlz. mature content maybe? xd"), mention_author=True, delete_after=30)
         except OSError as e:
             if str(e).startswith('No connection adapters were found for'):
                 print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
@@ -386,7 +390,7 @@ class MyClient(discord.Client):
         except Exception as e:
             if e.__class__ is discord.errors.HTTPException:
                 print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
-                await message.reply(content=('I just... I just can\'t anymore. I\'m sorry'), mention_author=True, delete_after=10)
+                await message.reply(content=('I just... I just can\'t anymore. I\'m sorry'), mention_author=True, delete_after=30)
             else:
                 print('oopsies\n')
                 traceback.print_exc()
