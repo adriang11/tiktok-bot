@@ -365,6 +365,7 @@ class MyClient(discord.Client):
                 await self.process_slideshow(driver, message, headers, spoilerwarning)
             except TimeoutException as e:
                 print(f'[DEBUG TRACE] TimeoutException: ', e, '\n')
+                await message.reply(content=("Something went wrong. Retrying..."), mention_author=True, delete_after=5)
                 # retry logic:
                 try:
                     await self.web_scrape(driver, message, headers, spoilerwarning)
