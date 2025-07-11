@@ -129,7 +129,11 @@ class MyClient(discord.Client):
                 if photoscheck:  
                     print('[DEBUG TRACE] Photos found\n')
                     raise NoSuchElementException
-                
+
+            except TimeoutException:
+                return
+
+            '''
             except TimeoutException:
                 print('[DEBUG TRACE] Searching for video\n')
 
@@ -190,7 +194,8 @@ class MyClient(discord.Client):
                 else:
                     print(r.status_code, '\n')
                     await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
-
+            '''
+            
             # time.sleep(30)
     
     async def process_slideshow(self, driver, message, headers, spoilerwarning):
@@ -249,73 +254,6 @@ class MyClient(discord.Client):
                 print('[DEBUG TRACE] files cleared\n')
                 fnum = 0
 
-    async def process_reel(self, driver, message, headers, spoilerwarning):
-            print(f'[DEBUG TRACE] Jarvis, initiate Instagram protocol\n')
-            
-            # strip link from message if appicable
-            link = message.content
-            print(f'[DEBUG TRACE] message detected: {link}\n')
-
-            if link == self.lastlink:
-                print(f'[DEBUG TRACE] last link matched: {link}\n')
-                await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
-                return
-
-            lst = link.split(' ')
-            for word in lst:
-                if 'instagram.com/reel/' in word:
-                    if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
-                    link = word.strip('||')
-
-            print(f'[DEBUG TRACE] extracted link: {link}\n')
-
-            driver.get(link)
-
-            # allow page load before continuing
-            element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
-            # element = driver.find_element(By.TAG_NAME, 'video')
-            
-            print('[DEBUG TRACE] element found\n')
-            
-            url = element.get_attribute('src')
-
-            all_cookies = driver.get_cookies()
-            cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
-
-            # CANNOT make GET request to blob link
-            r = requests.get(url, cookies=cookies, headers=headers) #WindowsError caught:  No connection adapters were found for 'blob:https://www.instagram.com/...'
-            
-            if os.path.exists('output.mp4'):
-                os.remove('output.mp4')
-                print('[DEBUG TRACE] file removed\n')
-
-            if r.status_code == 200:
-                with open('output.mp4', 'wb') as f:
-                    f.write(r.content)
-                print('[DEBUG TRACE] video downloaded\n')
-
-                # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
-                # os.system("ffmpeg.exe -v error -i output.mp4 -f null - >error.log 2>&1")
-                os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
-                log_file = open("log.txt","r")
-                log_file_content = log_file.read()
-                print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
-
-                if 'h264' not in log_file_content:
-                    os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
-                    await message.reply(file=discord.File('output1.mp4', spoiler=spoilerwarning))
-                    print('[DEBUG TRACE] file sent, crisis averted\n')
-                    await message.channel.send("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know")
-                    os.remove('output1.mp4')
-                else:
-                    await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
-                    print('[DEBUG TRACE] file sent\n')
-                    self.lastlink = link
-                    #os.remove('output.mp4')
-            else:
-                print(r.status_code, '\n')
-                await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
-
     async def acronym_check(self, message):
         for word in message.content.split():
             word = word.strip('?.[]()1234567890!@#$%^&*,').lower()
@@ -370,7 +308,7 @@ class MyClient(discord.Client):
                 try:
                     await self.web_scrape(driver, message, headers, spoilerwarning)
                 except:
-                    await message.reply(content=("Failure."), mention_author=True, delete_after=30)
+                    await message.reply(content=("Failure." + str(e)), mention_author=True, delete_after=30)
             except Exception as e:
                 print('oopsies\n')
                 traceback.print_exc()
