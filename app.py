@@ -131,10 +131,6 @@ class MyClient(discord.Client):
                     raise NoSuchElementException
 
             except TimeoutException:
-                return
-
-            '''
-            except TimeoutException:
                 print('[DEBUG TRACE] Searching for video\n')
 
                 if self.debugmode: 
@@ -153,12 +149,17 @@ class MyClient(discord.Client):
                     source = element.find_element(By.TAG_NAME, 'source') 
                     url = source.get_attribute('src')
                     
-                except (StaleElementReferenceException):
+                except StaleElementReferenceException:
                     print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
                     driver.refresh()
                     element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
                     source = element.find_element(By.TAG_NAME, 'source')
                     url = source.get_attribute('src')
+
+                except NoSuchElementException:
+                    print('[DEBUG TRACE] No src found in element')
+                    await message.reply("cooked sorry", mention_author=True, delete_after=2)
+                    return
 
                 all_cookies = driver.get_cookies()
                 cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
@@ -194,7 +195,6 @@ class MyClient(discord.Client):
                 else:
                     print(r.status_code, '\n')
                     await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
-            '''
             
             # time.sleep(30)
     
@@ -308,7 +308,7 @@ class MyClient(discord.Client):
                 try:
                     await self.web_scrape(driver, message, headers, spoilerwarning)
                 except:
-                    await message.reply(content=("Failure." + str(e)), mention_author=True, delete_after=30)
+                    await message.reply(content=("Failure."), mention_author=True, delete_after=30)
             except Exception as e:
                 print('oopsies\n')
                 traceback.print_exc()
