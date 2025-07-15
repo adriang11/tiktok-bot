@@ -146,8 +146,8 @@ class MyClient(discord.Client):
                     await message.reply("4 - Video element detected:", file=discord.File('screenshot.png'))
                 
                 try:
-                    source = element.find_element(By.TAG_NAME, 'source') 
-                    url = source.get_attribute('src')
+                    #source = element.find_element(By.TAG_NAME, 'source') 
+                    url = element.get_attribute('src')
                     
                 except StaleElementReferenceException:
                     print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
@@ -158,7 +158,12 @@ class MyClient(discord.Client):
 
                 except NoSuchElementException:
                     print('[DEBUG TRACE] No src found in element')
-                    await message.reply("cooked sorry", mention_author=True, delete_after=2)
+                    #await message.reply("cooked sorry", mention_author=True, delete_after=2)
+                    return
+
+                except WindowsError:
+                    print('[DEBUG TRACE] No connection adapters found')
+                    #await message.reply("cooked sorry", mention_author=True, delete_after=2)
                     return
 
                 all_cookies = driver.get_cookies()
@@ -273,7 +278,7 @@ class MyClient(discord.Client):
             test = await self.acronym_check(message)
             if test: return
 
-        if '.tiktok.com/' not in message.content and 'instagram.com/reel' not in message.content:
+        if '.tiktok.com/' not in message.content:
             return
 
         if message.content.startswith("||") and message.content.endswith("||"):
@@ -292,7 +297,7 @@ class MyClient(discord.Client):
         driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
 
         try:
-            if '.tiktok.com/' in message.content:
+            if '.tiktok.com/' in message.content and '/@' not in message.content:
                 await self.web_scrape(driver, message, headers, spoilerwarning)
             #else:
                 #await self.process_reel(driver, message, headers, spoilerwarning)
