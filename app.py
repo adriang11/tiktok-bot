@@ -148,6 +148,8 @@ class MyClient(discord.Client):
                 try:
                     #source = element.find_element(By.TAG_NAME, 'source') 
                     url = element.get_attribute('src')
+                    if(url.startswith('blob')): url = url[5:]
+
                     
                 except StaleElementReferenceException:
                     print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
@@ -158,12 +160,6 @@ class MyClient(discord.Client):
 
                 except NoSuchElementException:
                     print('[DEBUG TRACE] No src found in element')
-                    #await message.reply("cooked sorry", mention_author=True, delete_after=2)
-                    return
-
-                except WindowsError:
-                    print('[DEBUG TRACE] No connection adapters found')
-                    #await message.reply("cooked sorry", mention_author=True, delete_after=2)
                     return
 
                 all_cookies = driver.get_cookies()
@@ -186,17 +182,19 @@ class MyClient(discord.Client):
                     log_file_content = log_file.read()
                     print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
 
-                    if 'h264' not in log_file_content:
-                        os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
-                        await message.reply(file=discord.File('output1.mp4', spoiler=spoilerwarning))
-                        print('[DEBUG TRACE] file sent, crisis averted\n')
-                        await message.channel.send("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know")
-                        os.remove('output1.mp4')
-                    else:
-                        await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
-                        print('[DEBUG TRACE] file sent\n')
-                        self.lastlink = link
-                        #os.remove('output.mp4')
+                    await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
+
+                    # if 'h264' not in log_file_content:
+                    #     os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
+                    #     await message.reply(file=discord.File('output1.mp4', spoiler=spoilerwarning))
+                    #     print('[DEBUG TRACE] file sent, crisis averted\n')
+                    #     await message.channel.send("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know")
+                    #     os.remove('output1.mp4')
+                    # else:
+                    #     await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
+                    #     print('[DEBUG TRACE] file sent\n')
+                    #     self.lastlink = link
+                    #     #os.remove('output.mp4')
                 else:
                     print(r.status_code, '\n')
                     await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
@@ -398,9 +396,24 @@ async def toggle(interaction: discord.Interaction):
 
 @client.tree.command(name = "debug", description = "Toggle debug mode on/off") 
 async def debug(interaction: discord.Interaction):
+    if interaction.user.id != 474713843181027328:
+        await interaction.response.send_message("You are not Adrian.", ephemeral=True)
+        return
+
     tog = await client.toggler('debug')
     response = "Debug Mode set to " + str(tog)
     await interaction.response.send_message(response)
+
+@client.tree.command(name = "addwisdom", description = "Add wisdom like a boss") 
+async def add_wisdom(interaction: discord.Interaction, message: str):
+    if interaction.user.id != 474713843181027328:
+        await interaction.response.send_message("You are not Adrian.", ephemeral=True)
+        return
+    
+    with open("wisdomadrian.txt", 'a', encoding='utf-8') as file:
+        file.write(message + '\n')
+    
+    await interaction.response.send_message(("Added new wisdom: " + message), ephemeral=True)
 
 @client.tree.command(name = "poll", description = "Creates a poll") 
 async def poll(interaction: discord.Interaction, message: str, choice1: str, choice2: str, choice3: Optional[str], choice4: Optional[str], choice5: Optional[str], choice6: Optional[str], choice7: Optional[str], choice8: Optional[str], choice9: Optional[str], choice10: Optional[str]):
