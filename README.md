@@ -23,3 +23,8 @@ This bot uses Selenium that makes use of Chromedriver for Chrome to automate tes
 When running this project locally, the installed version of Chromedriver should be in sync with the version of Chrome you are using.
 You can find the latest stable builds  
 https://googlechromelabs.github.io/chrome-for-testing/
+
+## Challenges
+Currently, the video is being loaded via JavaScript as a stream or Blob, and the actual media file isn't exposed via a direct HTTP link.
+This goes against the original flow of the bot which scraped the video from the DOM of the webpage.
+Working on a fix to go around this.
