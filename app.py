@@ -148,7 +148,7 @@ class MyClient(discord.Client):
                 try:
                     #source = element.find_element(By.TAG_NAME, 'source') 
                     url = element.get_attribute('src')
-                    if(url.startswith('blob')): url = url[5:]
+                    # if(url.startswith('blob')): url = url[5:]
 
                     
                 except StaleElementReferenceException:
