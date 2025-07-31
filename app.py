@@ -149,8 +149,14 @@ class MyClient(discord.Client):
                     #source = element.find_element(By.TAG_NAME, 'source') 
                     url = element.get_attribute('src')
                     # if(url.startswith('blob')): url = url[5:]
+                    print(f'[DEBUG TRACE] video source: {url}\n')
 
-                    
+                    if url == '':
+                        source = element.find_element(By.TAG_NAME, 'source') 
+                        url = source.get_attribute('src')
+
+                        print(f'[DEBUG TRACE] erm ACTUALLY, this is the video source: {url}\n')
+
                 except StaleElementReferenceException:
                     print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
                     driver.refresh()
@@ -183,6 +189,8 @@ class MyClient(discord.Client):
                     print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
 
                     await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
+                    print('[DEBUG TRACE] file sent\n')
+                    self.lastlink = link
 
                     # if 'h264' not in log_file_content:
                     #     os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
@@ -320,6 +328,8 @@ class MyClient(discord.Client):
             if str(e).startswith('No connection adapters were found for'):
                 print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
                 #await message.reply('uummm')
+            elif str(e).startswith('Invalid URL '):
+                return
             else:
                 print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
                 await message.reply('Bot is working on another thing. Count to 10 and try again.')
