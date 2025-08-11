@@ -456,6 +456,182 @@ async def poll(interaction: discord.Interaction, message: str, choice1: str, cho
     for i in correctsize:
         await sent.add_reaction(emojis[i])
 
+@client.tree.command(name = "sugma", description = "Send tiktok without description")
+async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
+    await interaction.response.defer()
+    
+    spoiler_warning = spoilered == "true"
+
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless=new')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--no-sandbox')
+    options.add_argument(f"user-agent={headers}")
+
+    driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+
+    try:
+        print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+
+        driver.get(link)
+
+        user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
+        url = user.get_attribute("content")
+        lst = url.split('/')
+        for word in lst:
+            if word.startswith("@"):
+                username = word
+        if username == '@11adrian19':
+            await interaction.followup.send('<' + link + '>')
+            await interaction.followup.send("No free views")
+            return
+
+        print(f'[DEBUG TRACE] Found username\n')
+
+        try:
+                photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
+
+                if photoscheck:  
+                    print('[DEBUG TRACE] photos found\n')
+                    raise NoSuchElementException
+                
+        except TimeoutException:
+            print('[DEBUG TRACE] Searching for video\n')
+        
+            # allow page load before continuing
+            element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+            # element = driver.find_element(By.TAG_NAME, 'video')
+
+            print('[DEBUG TRACE] element found\n')
+            
+            try:
+                source = element.find_element(By.TAG_NAME, 'source') 
+                url = source.get_attribute('src')
+                
+            except (StaleElementReferenceException):
+                print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
+                driver.refresh()
+                element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+                source = element.find_element(By.TAG_NAME, 'source')
+                url = source.get_attribute('src')
+
+        all_cookies = driver.get_cookies()
+        cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
+
+        r = requests.get(url, cookies=cookies, headers=headers)
+        
+        if os.path.exists('output.mp4'):
+            os.remove('output.mp4')
+            print('[DEBUG TRACE] file removed\n')
+
+        if r.status_code == 200:
+            with open('output.mp4', 'wb') as f:
+                f.write(r.content)
+            print('[DEBUG TRACE] video downloaded\n')
+
+            # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
+            # os.system("ffmpeg.exe -v error -i output.mp4 -f null - >error.log 2>&1")
+            os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
+            log_file = open("log.txt","r")
+            log_file_content = log_file.read()
+            print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+
+            if 'h264' not in log_file_content:
+                os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
+                await interaction.followup.send('<' + link + '>')
+                await interaction.channel.send(file=discord.File('output1.mp4', spoiler=spoiler_warning))
+                print('[DEBUG TRACE] file sent, crisis averted\n')
+                await interaction.response.send_message(content=("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know"), ephemeral=True)
+                os.remove('output1.mp4')
+            else:
+                await interaction.followup.send('<' + link + '>')
+                await interaction.channel.send(file=discord.File('output.mp4', spoiler=spoiler_warning))
+                print('[DEBUG TRACE] file sent\n')
+                client.lastlink = link
+                #os.remove('output.mp4')
+        else:
+            print(r.status_code, '\n')
+            await interaction.followup.send(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), ephemeral=True)
+
+    
+    except NoSuchElementException as e:
+        print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
+        try:
+            print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
+
+            wrapper = WebDriverWait(driver, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
+            divs = WebDriverWait(wrapper, 10, 0.5, (StaleElementReferenceException)).until(lambda x: x.find_elements(By.TAG_NAME, 'div'))
+
+            files = []
+            found = []
+            fnum = 0
+            for i in divs:
+                if i.get_attribute('data-swiper-slide-index') not in found:
+                    found.append(i.get_attribute('data-swiper-slide-index'))
+                    container = i.find_element(By.TAG_NAME, 'img')
+                    url = container.get_attribute('src')
+                    all_cookies = driver.get_cookies()
+                    cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
+
+                    r = requests.get(url, cookies=cookies, headers=headers, stream=True)
+                    
+                    if len(files) == 9:
+                        await interaction.channel.send(files=files)
+                        num = 1
+                        for file in files:
+                            os.remove(f'img{num}.png')
+                            num+=1
+                        files.clear()
+                        print('[DEBUG TRACE] files cleared\n')
+                        fnum = 0
+                    
+                    filename = f"img{fnum+1}.png"
+                    with open(filename, 'wb') as out_file:
+                        fnum+=1
+                        shutil.copyfileobj(r.raw, out_file)
+                        files.append(discord.File(filename, spoiler=spoiler_warning))
+                    del r
+
+            await interaction.channel.send(files=files)
+            num = 1
+            for file in files:
+                os.remove(f'img{num}.png')
+                num+=1
+            files.clear()
+            await interaction.channel.send(fulldesc)
+            print('[DEBUG TRACE] files cleared\n')
+            fnum = 0
+            await interaction.followup.send(content=('<' + link + '>'), ephemeral=True)
+        except TimeoutException as e:
+            await interaction.followup.send(content=("Failure."), ephemeral=True)
+        except Exception as e:
+            print('oopsies\n')
+            traceback.print_exc()
+            await interaction.followup.send(content=("idk bot broke lawlz. mature content maybe? xd"), ephemeral=True)
+    except OSError as e:
+        if str(e).startswith('No connection adapters were found for'):
+            print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
+            #await interaction.followup.send(content=('uummm'), ephemeral=True)
+        else:
+            print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
+            await interaction.followup.send(content=('Bot is working on another thing. Count to 10 and try again.'), ephemeral=True)
+    except TimeoutException as e:
+        print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
+        await interaction.followup.send(content=('[ERROR] TimeoutException caught (Couldn\'t find video or slideshow'), ephemeral=True)
+    except SessionNotCreatedException as e:
+        print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
+        await interaction.followup.send(content=('[ERROR] Session not created: please notify Adrian to update Chromedriver'), ephemeral=True)
+    except Exception as e:
+        if e.__class__ is discord.errors.HTTPException:
+            print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
+            await interaction.followup.send(content=('Error: File too large. Maybe stop sending 12 minute tiktoks?'), ephemeral=True)
+        else:
+            print('oopsies\n')
+            traceback.print_exc()
+            await interaction.followup.send(content=('Error: Unknown Error Occured.\nDon\'t even ping Adrian he\'ll see this... \n', e), ephemeral=True)
+    finally:
+        driver.quit()
+
 @client.tree.command(name = "withcaption", description = "Send tiktok with description")
 async def with_caption(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
     await interaction.response.defer()
