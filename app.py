@@ -342,7 +342,8 @@ class MyClient(discord.Client):
         except Exception as e:
             if e.__class__ is discord.errors.HTTPException:
                 print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
-                await message.reply(content=('I just... I just can\'t anymore. I\'m sorry'), mention_author=True, delete_after=30)
+                client.lastlink = ""
+                await message.reply(content=('enough.'), mention_author=True, delete_after=30)
             else:
                 print('oopsies\n')
                 traceback.print_exc()
@@ -629,7 +630,7 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
             fnum = 0
             await interaction.followup.send(content=('<' + link + '>'), ephemeral=True)
         except TimeoutException as e:
-            await interaction.followup.send("Failure.", ephemeral=True)
+            await interaction.followup.send(content=("Failure."), ephemeral=True)
         except Exception as e:
             print('oopsies\n')
             traceback.print_exc()
@@ -650,6 +651,7 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
     except Exception as e:
         if e.__class__ is discord.errors.HTTPException:
             print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
+            client.lastlink = ""
             await interaction.followup.send(content=('Error: File too large. Maybe stop sending 12 minute tiktoks?'), ephemeral=True)
         else:
             print('oopsies\n')
@@ -835,6 +837,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
     except Exception as e:
         if e.__class__ is discord.errors.HTTPException:
             print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
+            client.lastlink = ""
             await interaction.followup.send(content=('Error: File too large. Maybe stop sending 12 minute tiktoks?'), ephemeral=True)
         else:
             print('oopsies\n')
