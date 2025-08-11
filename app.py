@@ -559,7 +559,7 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
             print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
 
             await interaction.followup.send('<' + link + '>')
-            await interaction.channel.send(file=discord.File('output1.mp4', spoiler=spoiler_warning))
+            await interaction.channel.send(file=discord.File('output.mp4', spoiler=spoiler_warning))
             print('[DEBUG TRACE] file sent\n')
             client.lastlink = link
 
