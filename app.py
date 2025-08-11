@@ -472,8 +472,24 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
 
     try:
         print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+        
+        if link == client.lastlink:
+            print(f'[DEBUG TRACE] last link matched: {link}\n')
+            await interaction.followup.send('<' + link + '>')
+            await interaction.channel.send(file=discord.File('output.mp4', spoiler=spoiler_warning))
+            return
 
         driver.get(link)
+
+        try:
+            maturecontent = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'p')))
+            for words in maturecontent:
+                if words.text == 'Log in to TikTok':
+                    print(f'[DEBUG TRACE] Mature content detected\n')
+                    await interaction.followup.send("Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=True)
+                    return
+        except:
+            pass
 
         user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
         url = user.get_attribute("content")
@@ -486,7 +502,7 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
             await interaction.followup.send("No free views")
             return
 
-        print(f'[DEBUG TRACE] Found username\n')
+        print(f'[DEBUG TRACE] View stealing protected\n')
 
         try:
                 photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
@@ -505,10 +521,16 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
             print('[DEBUG TRACE] element found\n')
             
             try:
-                source = element.find_element(By.TAG_NAME, 'source') 
-                url = source.get_attribute('src')
+                url = element.get_attribute('src')
+                print(f'[DEBUG TRACE] video source: {url}\n')
+
+                if url == '':
+                    source = element.find_element(By.TAG_NAME, 'source') 
+                    url = source.get_attribute('src')
+
+                    print(f'[DEBUG TRACE] erm ACTUALLY, this is the video source: {url}\n')
                 
-            except (StaleElementReferenceException):
+            except StaleElementReferenceException:
                 print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
                 driver.refresh()
                 element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
@@ -536,19 +558,24 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
             log_file_content = log_file.read()
             print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
 
-            if 'h264' not in log_file_content:
-                os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
-                await interaction.followup.send('<' + link + '>')
-                await interaction.channel.send(file=discord.File('output1.mp4', spoiler=spoiler_warning))
-                print('[DEBUG TRACE] file sent, crisis averted\n')
-                await interaction.response.send_message(content=("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know"), ephemeral=True)
-                os.remove('output1.mp4')
-            else:
-                await interaction.followup.send('<' + link + '>')
-                await interaction.channel.send(file=discord.File('output.mp4', spoiler=spoiler_warning))
-                print('[DEBUG TRACE] file sent\n')
-                client.lastlink = link
-                #os.remove('output.mp4')
+            await interaction.followup.send('<' + link + '>')
+            await interaction.channel.send(file=discord.File('output1.mp4', spoiler=spoiler_warning))
+            print('[DEBUG TRACE] file sent\n')
+            client.lastlink = link
+
+            # if 'h264' not in log_file_content:
+            #     os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
+            #     await interaction.followup.send('<' + link + '>')
+            #     await interaction.channel.send(file=discord.File('output1.mp4', spoiler=spoiler_warning))
+            #     print('[DEBUG TRACE] file sent, crisis averted\n')
+            #     await interaction.response.send_message(content=("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know"), ephemeral=True)
+            #     os.remove('output1.mp4')
+            # else:
+            #     await interaction.followup.send('<' + link + '>')
+            #     await interaction.channel.send(file=discord.File('output.mp4', spoiler=spoiler_warning))
+            #     print('[DEBUG TRACE] file sent\n')
+            #     client.lastlink = link
+            #     #os.remove('output.mp4')
         else:
             print(r.status_code, '\n')
             await interaction.followup.send(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), ephemeral=True)
@@ -598,12 +625,11 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
                 os.remove(f'img{num}.png')
                 num+=1
             files.clear()
-            await interaction.channel.send(fulldesc)
             print('[DEBUG TRACE] files cleared\n')
             fnum = 0
             await interaction.followup.send(content=('<' + link + '>'), ephemeral=True)
         except TimeoutException as e:
-            await interaction.followup.send(content=("Failure."), ephemeral=True)
+            await interaction.followup.send("Failure.", ephemeral=True)
         except Exception as e:
             print('oopsies\n')
             traceback.print_exc()
@@ -611,7 +637,7 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
     except OSError as e:
         if str(e).startswith('No connection adapters were found for'):
             print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-            #await interaction.followup.send(content=('uummm'), ephemeral=True)
+            await interaction.followup.send(content=('uummm'), ephemeral=True)
         else:
             print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
             await interaction.followup.send(content=('Bot is working on another thing. Count to 10 and try again.'), ephemeral=True)
