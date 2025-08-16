@@ -68,106 +68,160 @@ class MyClient(discord.Client):
             return self.debugmode
         
 
-    async def web_scrape(self, driver, message, headers, spoilerwarning):
-            print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
 
-            # strip link from message if appicable
-            link = message.content  
-            print(f'[DEBUG TRACE] message detected: {link}\n')
+    async def handle_error(self, e, ctx):
+        async def send_response(content, *, mention_author=True, delete_after=30):
+            # Handle both discord.Message and discord.Interaction
+            if isinstance(ctx, discord.Message):
+                return await ctx.reply(content, mention_author=mention_author, delete_after=delete_after)
+            elif isinstance(ctx, discord.Interaction):
+                # If response not sent yet, defer
+                if not ctx.response.is_done():
+                    await ctx.response.defer()
+                return await ctx.followup.send(content, wait=True, ephemeral=True)
 
-            if link == self.lastlink:
-                print(f'[DEBUG TRACE] last link matched: {link}\n')
-                await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
-                return
+        if isinstance(e, OSError):
+            if str(e).startswith('No connection adapters were found for'):
+                print('[DEBUG TRACE] Blob link detected: ', e, '\n')
+                #await send_response('uummm')
+            elif str(e).startswith('Invalid URL '):
+                print('[DEBUG TRACE] Invalid URL Error: ', e, '\n')
+                await send_response('CODED INCORRECTLY')
+            else:
+                print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
+                await send_response('Bot is working on another thing. Count to 10 and try again.')
+        elif isinstance(e, TimeoutException):
+            print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
+            await send_response('Failure.')
+        elif isinstance(e, SessionNotCreatedException):
+            print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
+            await send_response('[ERROR] Session not created: please notify Adrian to update Chromedriver')
+        elif isinstance(e, StaleElementReferenceException):
+            print('[DEBUG TRACE] StaleElementReferenceException caught: ', e, '\n')
+            await send_response('Stale like a moldy piece of bread...')
+        else:
+            if e.__class__ is discord.errors.HTTPException:
+                print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
+                client.lastlink = ""
+                await send_response('enough.', mention_author=True, delete_after=30)
+            else:
+                print('oopsies\n')
+                traceback.print_exc()
+                feedback = 'Unknown Error:' + str(e)
+                await send_response(feedback, mention_author=True)
+        
+    async def run_prechecks(self, driver, message, spoilerwarning):
+        # strip link from message if appicable
+        link = message.content  
+        print(f'[DEBUG TRACE] message detected: {link}\n')
 
-            lst = link.split(' ')
-            for word in lst:
-                if '.tiktok.com/' in word:
-                    if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
-                    link = word.strip('||')
+        if link == self.lastlink:
+            print(f'[DEBUG TRACE] last link matched: {link}\n')
+            await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
+            return
 
-            print(f'[DEBUG TRACE] extracted link: {link}\n')
+        lst = link.split(' ')
+        for word in lst:
+            if '.tiktok.com/' in word:
+                if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
+                link = word.strip('||')
 
-            driver.get(link)
+        print(f'[DEBUG TRACE] extracted link: {link}\n')
+        
+        driver.get(link)
 
-            # Run Prechecks
-            try:
-                maturecontent = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'p')))
-                for words in maturecontent:
-                    if words.text == 'Log in to TikTok':
-                        print(f'[DEBUG TRACE] Mature content detected\n')
-                        await message.reply("Mature Content Detected. Gotta go to the app for this one buddy")
-                        return
-            except:
-                pass
+        # Run Prechecks
+        try:
+            maturecontent = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'p')))
+            for words in maturecontent:
+                if words.text == 'Log in to TikTok':
+                    print(f'[DEBUG TRACE] Mature content detected\n')
+                    await message.reply("Mature Content Detected. Gotta go to the app for this one buddy")
+                    return
+        except:
+            pass
 
-            print(f'[DEBUG TRACE] No mature content detected\n')
+        print(f'[DEBUG TRACE] No mature content detected\n')
+
+        if self.debugmode: 
+            driver.get_screenshot_as_file("screenshot.png")
+            await message.reply("1 - After Pre-checks:", file=discord.File('screenshot.png'))
+
+        user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
+        url = user.get_attribute("content")
+        lst = url.split('/')
+        for word in lst:
+            if word.startswith("@"):
+                username = word
+        if username == '@11adrian19':
+            await message.reply("No free views")
+            return
+        
+        print(f'[DEBUG TRACE] View stealing protected\n')
+
+        return link
+
+    async def find_video(self, driver, message):
+        try:
+            print('[DEBUG TRACE] Searching for video\n')
 
             if self.debugmode: 
                 driver.get_screenshot_as_file("screenshot.png")
-                await message.reply("1 - After Pre-checks:", file=discord.File('screenshot.png'))
+                await message.reply("3 - After Photos Check (No Slideshow Detected):", file=discord.File('screenshot.png'))
 
-            user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
-            url = user.get_attribute("content")
-            lst = url.split('/')
-            for word in lst:
-                if word.startswith("@"):
-                    username = word
-            if username == '@11adrian19':
-                await message.reply("No free views")
-                return
+            element = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+        
+            print('[DEBUG TRACE] element found\n')
+
+            if self.debugmode: 
+                driver.get_screenshot_as_file("screenshot.png")
+                await message.reply("4 - Video element detected:", file=discord.File('screenshot.png'))
             
-            print(f'[DEBUG TRACE] View stealing protected\n')
-
             try:
-                if self.debugmode: 
-                    driver.get_screenshot_as_file("screenshot.png")
-                    await message.reply("2 - After Metadata:", file=discord.File('screenshot.png'))
-
-                photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
-
-                if photoscheck:  
-                    print('[DEBUG TRACE] Photos found\n')
-                    raise NoSuchElementException
-
-            except TimeoutException:
-                print('[DEBUG TRACE] Searching for video\n')
-
-                if self.debugmode: 
-                    driver.get_screenshot_as_file("screenshot.png")
-                    await message.reply("3 - After Photos Check (No Slideshow Detected):", file=discord.File('screenshot.png'))
-
-                element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
-            
-                print('[DEBUG TRACE] element found\n')
-
-                if self.debugmode: 
-                    driver.get_screenshot_as_file("screenshot.png")
-                    await message.reply("4 - Video element detected:", file=discord.File('screenshot.png'))
+                source = element.find_element(By.TAG_NAME, 'source') 
+                url = source.get_attribute('src')
                 
-                try:
-                    #source = element.find_element(By.TAG_NAME, 'source') 
-                    url = element.get_attribute('src')
-                    # if(url.startswith('blob')): url = url[5:]
-                    print(f'[DEBUG TRACE] video source: {url}\n')
+                # if(url.startswith('blob')): url = url[5:]
+                
+                print(f'[DEBUG TRACE] video source: {url}\n')
+            except NoSuchElementException as e:
+                # try old logic:
+                url = element.get_attribute('src')
+                print(f'[DEBUG TRACE] erm ACTUALLY, this is the video source: {url}\n')
 
-                    if url == '':
-                        source = element.find_element(By.TAG_NAME, 'source') 
-                        url = source.get_attribute('src')
+            # except StaleElementReferenceException:
+            #     print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
+            #     driver.refresh()
+            #     element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+            #     source = element.find_element(By.TAG_NAME, 'source')
+            #     url = source.get_attribute('src')
 
-                        print(f'[DEBUG TRACE] erm ACTUALLY, this is the video source: {url}\n')
+            return url
+        
+        except TimeoutException as e:
+            if self.debugmode: 
+                driver.get_screenshot_as_file("screenshot.png")
+                await message.reply("2 - After Metadata:", file=discord.File('screenshot.png'))
 
-                except StaleElementReferenceException:
-                    print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
-                    driver.refresh()
-                    element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
-                    source = element.find_element(By.TAG_NAME, 'source')
-                    url = source.get_attribute('src')
+            print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
 
-                except NoSuchElementException:
-                    print('[DEBUG TRACE] No src found in element')
-                    return
+            photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
 
+            if photoscheck:  
+                print('[DEBUG TRACE] Photos found\n')
+                return
+
+    async def web_scrape(self, driver, message, headers, spoilerwarning):
+            print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+
+            link = await self.run_prechecks(driver, message, spoilerwarning)
+            if link is None: return
+
+            url = await self.find_video(driver, message)
+
+            if url is None:
+                await self.process_slideshow(driver, message, headers, spoilerwarning)
+            else:
                 all_cookies = driver.get_cookies()
                 cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
 
@@ -188,26 +242,20 @@ class MyClient(discord.Client):
                     log_file_content = log_file.read()
                     print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
 
-                    await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
-                    print('[DEBUG TRACE] file sent\n')
-                    self.lastlink = link
-
-                    # if 'h264' not in log_file_content:
-                    #     os.system('ffmpeg -hide_banner -loglevel error -i output.mp4 output1.mp4')
-                    #     await message.reply(file=discord.File('output1.mp4', spoiler=spoilerwarning))
-                    #     print('[DEBUG TRACE] file sent, crisis averted\n')
-                    #     await message.channel.send("uhhh lmk if it actually sent or if its that dumbass shaking tiktok logo i genuinely dont know")
-                    #     os.remove('output1.mp4')
-                    # else:
-                    #     await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
-                    #     print('[DEBUG TRACE] file sent\n')
-                    #     self.lastlink = link
-                    #     #os.remove('output.mp4')
+                    if 'h264' not in log_file_content:
+                        print('[DEBUG TRACE] Hevc file detected. Checking for photos...\n')
+                        await message.reply('Crisis averted... Thank me later', mention_author=True, delete_after=2)
+                        await self.process_slideshow(driver, message, headers, spoilerwarning)
+                    else:
+                        await message.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
+                        print('[DEBUG TRACE] file sent\n')
+                        self.lastlink = link
                 else:
                     print(r.status_code, '\n')
                     await message.reply(content=('Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'), mention_author=True)
+
             
-            # time.sleep(30)
+                # time.sleep(30)
     
     async def process_slideshow(self, driver, message, headers, spoilerwarning):
                 print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
@@ -305,50 +353,23 @@ class MyClient(discord.Client):
         try:
             if '.tiktok.com/' in message.content and '/@' not in message.content:
                 await self.web_scrape(driver, message, headers, spoilerwarning)
-            #else:
-                #await self.process_reel(driver, message, headers, spoilerwarning)
    
         except NoSuchElementException as e:
             print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
             try:
                 await self.process_slideshow(driver, message, headers, spoilerwarning)
             except TimeoutException as e:
-                print(f'[DEBUG TRACE] TimeoutException: ', e, '\n')
-                await message.reply(content=("Something went wrong. Retrying..."), mention_author=True, delete_after=5)
+                print('[DEBUG TRACE] Timeout Exception. Retrying...')
+                await message.reply("Something went wrong. Retrying...", mention_author=True, delete_after=3)
                 # retry logic:
                 try:
                     await self.web_scrape(driver, message, headers, spoilerwarning)
                 except:
-                    await message.reply(content=("Failure."), mention_author=True, delete_after=30)
+                    await self.handle_error(e, message)
             except Exception as e:
-                print('oopsies\n')
-                traceback.print_exc()
-                await message.reply(content=("idk bot broke lawlz. mature content maybe? xd"), mention_author=True, delete_after=30)
-        except OSError as e:
-            if str(e).startswith('No connection adapters were found for'):
-                print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-                #await message.reply('uummm')
-            elif str(e).startswith('Invalid URL '):
-                return
-            else:
-                print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-                await message.reply('Bot is working on another thing. Count to 10 and try again.')
-        except TimeoutException as e:
-            print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
-            await message.reply('[ERROR] TimeoutException caught: I have failed.')
-        except SessionNotCreatedException as e:
-            print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
-            await message.reply('[ERROR] Session not created: please notify Adrian to update Chromedriver')
+                await self.handle_error(e, message)
         except Exception as e:
-            if e.__class__ is discord.errors.HTTPException:
-                print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
-                client.lastlink = ""
-                await message.reply(content=('enough.'), mention_author=True, delete_after=30)
-            else:
-                print('oopsies\n')
-                traceback.print_exc()
-                feedback = 'Error: Unknown Error Occured.\nDon\'t even ping Adrian he\'ll see this... \n' + str(e)
-                await message.reply(content=(feedback), mention_author=True)
+            await self.handle_error(e, message)
         finally:
             driver.quit()
 
@@ -448,8 +469,9 @@ async def poll(interaction: discord.Interaction, message: str, choice1: str, cho
     options = '\n'.join(options)
 
     embed = discord.Embed(title=message, description=options, color=0x13a6f0)
-
-    embed.set_footer(text="Poll created by somebody in the server xd")
+    
+    footer_text = 'Poll created by ' + interaction.user.display_name
+    embed.set_footer(text=footer_text)
     
     await interaction.response.send_message(embed=embed)
     sent = await interaction.original_response()
@@ -635,28 +657,9 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
             print('oopsies\n')
             traceback.print_exc()
             await interaction.followup.send(content=("idk bot broke lawlz. mature content maybe? xd"), ephemeral=True)
-    except OSError as e:
-        if str(e).startswith('No connection adapters were found for'):
-            print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-            await interaction.followup.send(content=('uummm'), ephemeral=True)
-        else:
-            print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-            await interaction.followup.send(content=('Bot is working on another thing. Count to 10 and try again.'), ephemeral=True)
-    except TimeoutException as e:
-        print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
-        await interaction.followup.send(content=('[ERROR] TimeoutException caught (Couldn\'t find video or slideshow'), ephemeral=True)
-    except SessionNotCreatedException as e:
-        print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
-        await interaction.followup.send(content=('[ERROR] Session not created: please notify Adrian to update Chromedriver'), ephemeral=True)
+    
     except Exception as e:
-        if e.__class__ is discord.errors.HTTPException:
-            print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
-            client.lastlink = ""
-            await interaction.followup.send(content=('Error: File too large. Maybe stop sending 12 minute tiktoks?'), ephemeral=True)
-        else:
-            print('oopsies\n')
-            traceback.print_exc()
-            await interaction.followup.send(content=('Error: Unknown Error Occured.\nDon\'t even ping Adrian he\'ll see this... \n', e), ephemeral=True)
+        client.handle_error(e, interaction)
     finally:
         driver.quit()
 
