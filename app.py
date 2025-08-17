@@ -676,7 +676,7 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
             await interaction.followup.send(content=("idk bot broke lawlz. mature content maybe? xd"), ephemeral=True)
     
     except Exception as e:
-        client.handle_error(e, interaction)
+        await client.handle_error(e, interaction)
     finally:
         driver.quit()
 
