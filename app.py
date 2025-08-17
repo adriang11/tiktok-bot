@@ -1,6 +1,8 @@
 import os
+import base64
 import discord
 import shutil
+import tempfile
 import time
 import traceback
 import random
@@ -26,6 +28,8 @@ from typing import Literal
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 CHROME_DRIVER_PATH = os.getenv('CHROME_DRIVER_PATH')
+WISDOM = os.getenv('ENCODED_FILE')
+DIVS_WISDOM = os.getenv('DIVS_ENCODED_FILE')
 
 class MyClient(discord.Client):
     def __init__(self, *, intents: discord.Intents):
@@ -35,6 +39,8 @@ class MyClient(discord.Client):
         self.lastlink = ""
         self.toggle = False
         self.debugmode = False
+        self.wisdoms = []
+        self.divswisdoms = []
     
     async def on_ready(self):
         await self.wait_until_ready()
@@ -44,14 +50,43 @@ class MyClient(discord.Client):
 
         await self.change_presence(activity=discord.Game(name="League of Legends"))
 
-        dungeon = client.get_channel(os.getenv('DUNGEON'))
-        degens = client.get_channel(os.getenv('DEGENS'))
-        ducklings = client.get_channel(os.getenv('DUCKLINGS'))
+        dungeon = self.get_channel(os.getenv('DUNGEON'))
+        degens = self.get_channel(os.getenv('DEGENS'))
+        ducklings = self.get_channel(os.getenv('DUCKLINGS'))
         # await dungeon.send('I am alive and capable of feeling.')
         # await degens.send('I am alive and capable of feeling.')
         # await ducklings.send('I am alive and capable of feeling.')
 
-        print(f'{client.user} is Ready to go!!')
+        # Decode Wisdom files
+        if WISDOM:
+            try:
+                self.wisdoms = base64.b64decode(WISDOM).decode("utf-8").splitlines()
+            except Exception as e:
+                print("[DEBUG TRACE] Failed to decode wisdom file:", e)
+                self.wisdoms = ["ERROR: wisdom file invalid"]
+        else:
+            print("No wisdom file found in environment")
+            self.wisdoms = ["ERROR: wisdom file missing"]
+        
+        if DIVS_WISDOM:
+            try:
+                self.divswisdoms = base64.b64decode(DIVS_WISDOM).decode("utf-8").splitlines()
+            except Exception as e:
+                print("[DEBUG TRACE] Failed to decode divs wisdom file:", e)
+                self.divswisdoms = ["ERROR: divs wisdom file invalid"]
+        else:
+            self.divswisdoms = ["ERROR: divs wisdom file missing"]
+
+        print(f'{self.user} is Ready to go!!')
+    
+    async def acronym_check(self, message):
+        for word in message.content.split():
+            word = word.strip('?.[]()1234567890!@#$%^&*,').lower()
+            if word in acronym_list:
+                await message.reply(acronym_list[word])
+                return True
+        
+        return False
     
     async def toggler(self, attribute):
         if attribute == 'acronym':
@@ -66,8 +101,11 @@ class MyClient(discord.Client):
             else:
                 self.debugmode = False
             return self.debugmode
-        
 
+    async def breakpoint(self, content, driver, message):
+        if self.debugmode: 
+            driver.get_screenshot_as_file("screenshot.png")
+            await message.reply(f"{content}", file=discord.File('screenshot.png'))
 
     async def handle_error(self, e, ctx):
         async def send_response(content, *, mention_author=True, delete_after=30):
@@ -78,7 +116,7 @@ class MyClient(discord.Client):
                 # If response not sent yet, defer
                 if not ctx.response.is_done():
                     await ctx.response.defer()
-                return await ctx.followup.send(content, wait=True, ephemeral=True)
+                return await ctx.followup.send(content, ephemeral=True)
 
         if isinstance(e, OSError):
             if str(e).startswith('No connection adapters were found for'):
@@ -143,9 +181,7 @@ class MyClient(discord.Client):
 
         print(f'[DEBUG TRACE] No mature content detected\n')
 
-        if self.debugmode: 
-            driver.get_screenshot_as_file("screenshot.png")
-            await message.reply("1 - After Pre-checks:", file=discord.File('screenshot.png'))
+        self.breakpoint("1 - After Pre-checks:", driver, message)
 
         user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
         url = user.get_attribute("content")
@@ -164,18 +200,14 @@ class MyClient(discord.Client):
     async def find_video(self, driver, message):
         try:
             print('[DEBUG TRACE] Searching for video\n')
-
-            if self.debugmode: 
-                driver.get_screenshot_as_file("screenshot.png")
-                await message.reply("3 - After Photos Check (No Slideshow Detected):", file=discord.File('screenshot.png'))
+            
+            self.breakpoint("3 - After Photos Check (No Slideshow Detected):", driver, message)
 
             element = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
         
             print('[DEBUG TRACE] element found\n')
 
-            if self.debugmode: 
-                driver.get_screenshot_as_file("screenshot.png")
-                await message.reply("4 - Video element detected:", file=discord.File('screenshot.png'))
+            self.breakpoint("4 - Video element detected:", driver, message)
             
             try:
                 source = element.find_element(By.TAG_NAME, 'source') 
@@ -199,9 +231,7 @@ class MyClient(discord.Client):
             return url
         
         except TimeoutException as e:
-            if self.debugmode: 
-                driver.get_screenshot_as_file("screenshot.png")
-                await message.reply("2 - After Metadata:", file=discord.File('screenshot.png'))
+            self.breakpoint("2 - After Metadata:", driver, message)
 
             print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
 
@@ -213,6 +243,12 @@ class MyClient(discord.Client):
 
     async def web_scrape(self, driver, message, headers, spoilerwarning):
             print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+
+            # if isinstance(ctx, discord.Message):
+            #     link = await self.run_prechecks(driver, ctx, spoilerwarning)
+            #     if link is None: return
+            # elif isinstance(ctx, discord.Interaction):
+            #     link = userinput
 
             link = await self.run_prechecks(driver, message, spoilerwarning)
             if link is None: return
@@ -259,20 +295,15 @@ class MyClient(discord.Client):
     
     async def process_slideshow(self, driver, message, headers, spoilerwarning):
                 print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
-
-                if self.debugmode: 
-                    driver.get_screenshot_as_file("screenshot.png")
-                    await message.reply(file=discord.File('screenshot.png'))
+                
+                self.breakpoint("slideshow 1:", driver, message)
 
                 wrapper = WebDriverWait(driver, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
                 print(f'[DEBUG TRACE] wrapper found\n')
                 divs = WebDriverWait(wrapper, 10, 0.5, (StaleElementReferenceException)).until(lambda x: x.find_elements(By.TAG_NAME, 'div'))
                 print(f'[DEBUG TRACE] div found\n')
-                # divs = wrapper.find_elements(By.TAG_NAME, 'div')
                 
-                if self.debugmode: 
-                    driver.get_screenshot_as_file("screenshot.png")
-                    await message.reply(file=discord.File('screenshot.png'))
+                self.breakpoint("slideshow 2:", driver, message)
 
                 files = []
                 found = []
@@ -312,15 +343,6 @@ class MyClient(discord.Client):
                 files.clear()
                 print('[DEBUG TRACE] files cleared\n')
                 fnum = 0
-
-    async def acronym_check(self, message):
-        for word in message.content.split():
-            word = word.strip('?.[]()1234567890!@#$%^&*,').lower()
-            if word in acronym_list:
-                await message.reply(acronym_list[word])
-                return True
-        
-        return False
 
     async def on_message(self, message):
         spoilerwarning = False
@@ -404,19 +426,13 @@ async def daily_wisdom(interaction: discord.Interaction):
 
 @client.tree.command(name = "mywisdom", description = "Receive a random wisdom from Adrian the Chango") 
 async def adrians_wisdom(interaction: discord.Interaction):
-    fd = open("wisdomadrian.txt", "r", encoding='utf-8')
-    lines = fd.readlines()
-    wisdom = random.choice(lines)
-    fd.close()
+    wisdom = random.choice(client.wisdoms)
     print("Wisdom sent: ", wisdom)
     await interaction.response.send_message(wisdom)
 
 @client.tree.command(name = "divswisdom", description = "Receive a random wisdom from Divanni the Gomez") 
 async def divs_wisdom3(interaction: discord.Interaction):
-    fd = open("wisdomdiv.txt", "r", encoding='utf-8')
-    lines = fd.readlines()
-    wisdom = random.choice(lines)
-    fd.close()
+    wisdom = random.choice(client.divswisdoms)
     print("Wisdom sent: ", wisdom)
     await interaction.response.send_message(wisdom)
 
@@ -517,6 +533,7 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
         user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
         url = user.get_attribute("content")
         lst = url.split('/')
+        username = None
         for word in lst:
             if word.startswith("@"):
                 username = word
