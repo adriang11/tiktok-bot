@@ -174,7 +174,7 @@ class MyClient(discord.Client):
 
         if link == self.lastlink:
             print(f'[DEBUG TRACE] last link matched: {link}\n')
-            await self.generic_output(ctx, spoilerwarning=spoilerwarning)
+            await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
             return
 
         lst = link.split(' ')
@@ -556,7 +556,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
     try:
         print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
         
-        link = link
+        link = link # too tired rn to tell if this is necessary
         
         print(f'[DEBUG TRACE] message detected: {link}\n')
 
