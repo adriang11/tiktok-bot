@@ -202,13 +202,17 @@ class MyClient(discord.Client):
 
         await self.breakpoint("1 - After Pre-checks:", driver, ctx)
 
+
+        no_free_views = ['@11adrian19','@mnymchns','@po0japanchal']
+
         user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
         url = user.get_attribute("content")
         lst = url.split('/')
+        
         for word in lst:
             if word.startswith("@"):
                 username = word
-        if username == '@11adrian19':
+        if username in no_free_views:
             if isinstance(ctx, discord.Message):
                 await ctx.reply("No free views")
             elif isinstance(ctx, discord.Interaction):
