@@ -583,7 +583,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
 
         print(f'[DEBUG TRACE] No mature content detected\n')
 
-        client.breakpoint("1 - After Pre-checks:", driver, interaction)
+        await client.breakpoint("1 - After Pre-checks:", driver, interaction)
 
         user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
         url = user.get_attribute("content")
@@ -616,7 +616,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
 
         if link == client.lastlink:
             print(f'[DEBUG TRACE] last link matched: {link}\n')
-            await client.generic_output(interaction, spoilerwarning=spoilerwarning)
+            await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
             if header: await interaction.channel.send(header)
             await interaction.channel.send(fulldesc)
             return
@@ -625,6 +625,8 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
 
         if url is None:
             await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
+            if header: await interaction.channel.send(header)
+            await interaction.channel.send(fulldesc)
         else:
             all_cookies = driver.get_cookies()
             cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
