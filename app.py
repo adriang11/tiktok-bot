@@ -430,7 +430,7 @@ class MyClient(discord.Client):
             if retry == 1: 
                 try:
                     print('[DEBUG TRACE] Blob link detected. Retrying...')
-                    await driver.quit()
+                    driver.quit()
                     await self.web_scrape(driver, message, headers, spoilerwarning)
                 except:
                     print('[DEBUG TRACE] Retry failed')
@@ -560,13 +560,13 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
         if retry == 1: 
             try:
                 print('[DEBUG TRACE] Blob link detected. Retrying...')
-                await driver.quit()
+                driver.quit()
                 await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
             except:
                 print('[DEBUG TRACE] Retry failed')
                 await client.handle_error(e, interaction, link=link, retry=retry)
     finally:
-        await driver.quit()
+        driver.quit()
 
 @client.tree.command(name = "withcaption", description = "Send tiktok with description")
 async def with_caption(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
