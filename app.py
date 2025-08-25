@@ -110,7 +110,7 @@ class MyClient(discord.Client):
             driver.get_screenshot_as_file("screenshot.png")
             await message.reply(f"{content}", file=discord.File('screenshot.png'))
 
-    async def handle_error(self, e, ctx, *, link="", retry=False):
+    async def handle_error(self, e, ctx, *, link="", retry=0):
         async def send_response(content, *, mention_author=True, delete_after=30):
             # Handle both discord.Message and discord.Interaction
             if isinstance(ctx, discord.Message):
@@ -121,11 +121,11 @@ class MyClient(discord.Client):
         if isinstance(e, OSError):
             if str(e).startswith('No connection adapters were found for'):
                 print('[DEBUG TRACE] Blob link detected: ', e, '\n')
-                if retry:
+                if retry == 1:
                     if isinstance(ctx, discord.Interaction):
                         return await ctx.followup.send('If at first you don\'t succeed, try and try again', ephemeral=True) 
                 else:
-                    return True
+                    return 1
             elif str(e).startswith('Invalid URL '):
                 print('[DEBUG TRACE] Invalid URL Error: ', e, '\n')
                 await send_response('CODED INCORRECTLY')
@@ -425,9 +425,9 @@ class MyClient(discord.Client):
             except Exception as e:
                 await self.handle_error(e, message)
         except Exception as e:
-            retry = False
+            retry = 0
             retry = await self.handle_error(e, message, retry=retry)
-            if retry: 
+            if retry == 1: 
                 try:
                     print('[DEBUG TRACE] Blob link detected. Retrying...')
                     await self.web_scrape(driver, message, headers, spoilerwarning)
@@ -554,9 +554,9 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
     try:
         await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
     except Exception as e:
-        retry = False
+        retry = 0
         retry = await client.handle_error(e, interaction, link=link, retry=retry)
-        if retry: 
+        if retry == 1: 
             try:
                 print('[DEBUG TRACE] Blob link detected. Retrying...')
                 await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
