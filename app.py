@@ -431,6 +431,7 @@ class MyClient(discord.Client):
                 try:
                     print('[DEBUG TRACE] Blob link detected. Retrying...')
                     driver.quit()
+                    driver = webdriver.Chrome(options=options)
                     await self.web_scrape(driver, message, headers, spoilerwarning)
                 except:
                     print('[DEBUG TRACE] Retry failed')
@@ -561,6 +562,7 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
             try:
                 print('[DEBUG TRACE] Blob link detected. Retrying...')
                 driver.quit()
+                driver = webdriver.Chrome(options=options)
                 await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
             except:
                 print('[DEBUG TRACE] Retry failed')
