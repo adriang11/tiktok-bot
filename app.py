@@ -145,11 +145,10 @@ class MyClient(discord.Client):
             if e.__class__ is discord.errors.HTTPException:
                 print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
                 client.lastlink = ""
-                await send_response('enough.', mention_author=True, delete_after=30)
                 if isinstance(ctx, discord.Message):
                     return await ctx.reply('enough.', mention_author=True, delete_after=30)
                 elif isinstance(ctx, discord.Interaction):
-                    await ctx.followup.send('File exceeds the size limit allowed on Discord', ephemeral=True)
+                    await ctx.followup.send('File exceeds the size limit allowed on Discord. But just for you, imma send the link anyway so you can watch it on the Discord embed :D Also tell sharia that his bot needs to NOT respond to links sent by another bot', ephemeral=True)
                     return await ctx.channel.send(link) 
             else:
                 print('oopsies\n')
@@ -225,7 +224,7 @@ class MyClient(discord.Client):
                 await ctx.reply("No free views")
             elif isinstance(ctx, discord.Interaction):
                 await ctx.followup.send(link )
-                await ctx.followup.send("No free views")
+                await ctx.followup.send("No free views", ephemeral=True)
             return
         
         print(f'[DEBUG TRACE] View stealing protected\n')
@@ -430,8 +429,10 @@ class MyClient(discord.Client):
             retry = await self.handle_error(e, message, retry=retry)
             if retry: 
                 try:
-                    self.web_scrape(driver, message, headers, spoilerwarning)
+                    print('[DEBUG TRACE] Blob link detected. Retrying...')
+                    await self.web_scrape(driver, message, headers, spoilerwarning)
                 except:
+                    print('[DEBUG TRACE] Retry failed')
                     await self.handle_error(e, message, retry=retry)
         finally:
             driver.quit()
@@ -557,8 +558,10 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
         retry = await client.handle_error(e, interaction, link=link, retry=retry)
         if retry: 
             try:
-                client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
+                print('[DEBUG TRACE] Blob link detected. Retrying...')
+                await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
             except:
+                print('[DEBUG TRACE] Retry failed')
                 await client.handle_error(e, interaction, link=link, retry=retry)
     finally:
         driver.quit()
@@ -617,7 +620,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                 username = word
         if username == '@11adrian19':
             await interaction.followup.send(link)
-            await interaction.followup.send("No free views")
+            await interaction.followup.send("No free views", ephemeral=True)
             return
         
         print(f'[DEBUG TRACE] Found username\n')
