@@ -110,19 +110,22 @@ class MyClient(discord.Client):
             driver.get_screenshot_as_file("screenshot.png")
             await message.reply(f"{content}", file=discord.File('screenshot.png'))
 
-    async def handle_error(self, e, ctx):
+    async def handle_error(self, e, ctx, *, link="", retry=False):
         async def send_response(content, *, mention_author=True, delete_after=30):
             # Handle both discord.Message and discord.Interaction
             if isinstance(ctx, discord.Message):
                 return await ctx.reply(content, mention_author=mention_author, delete_after=delete_after)
             elif isinstance(ctx, discord.Interaction):
-                return await ctx.followup.send(content, ephemeral=True)
+                return await ctx.followup.send(content, ephemeral=True) 
 
         if isinstance(e, OSError):
             if str(e).startswith('No connection adapters were found for'):
                 print('[DEBUG TRACE] Blob link detected: ', e, '\n')
-                if isinstance(ctx, discord.Interaction):
-                    return await ctx.followup.send('If at first you don\'t succeed, try and try again', ephemeral=True)
+                if retry:
+                    if isinstance(ctx, discord.Interaction):
+                        return await ctx.followup.send('If at first you don\'t succeed, try and try again', ephemeral=True) 
+                else:
+                    return True
             elif str(e).startswith('Invalid URL '):
                 print('[DEBUG TRACE] Invalid URL Error: ', e, '\n')
                 await send_response('CODED INCORRECTLY')
@@ -143,6 +146,11 @@ class MyClient(discord.Client):
                 print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
                 client.lastlink = ""
                 await send_response('enough.', mention_author=True, delete_after=30)
+                if isinstance(ctx, discord.Message):
+                    return await ctx.reply('enough.', mention_author=True, delete_after=30)
+                elif isinstance(ctx, discord.Interaction):
+                    await ctx.followup.send('File exceeds the size limit allowed on Discord', ephemeral=True)
+                    return await ctx.channel.send(link) 
             else:
                 print('oopsies\n')
                 traceback.print_exc()
@@ -203,7 +211,7 @@ class MyClient(discord.Client):
         await self.breakpoint("1 - After Pre-checks:", driver, ctx)
 
 
-        no_free_views = ['@11adrian19','@mnymchns','@po0japanchal']
+        no_free_views = ['@11adrian19','@rn.vg','@mnymchns','@po0japanchal']
 
         user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
         url = user.get_attribute("content")
@@ -216,7 +224,7 @@ class MyClient(discord.Client):
             if isinstance(ctx, discord.Message):
                 await ctx.reply("No free views")
             elif isinstance(ctx, discord.Interaction):
-                await ctx.followup.send('<' + link + '>')
+                await ctx.followup.send(link )
                 await ctx.followup.send("No free views")
             return
         
@@ -418,7 +426,13 @@ class MyClient(discord.Client):
             except Exception as e:
                 await self.handle_error(e, message)
         except Exception as e:
-            await self.handle_error(e, message)
+            retry = False
+            retry = await self.handle_error(e, message, retry=retry)
+            if retry: 
+                try:
+                    self.web_scrape(driver, message, headers, spoilerwarning)
+                except:
+                    await self.handle_error(e, message, retry=retry)
         finally:
             driver.quit()
 
@@ -539,7 +553,13 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
     try:
         await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
     except Exception as e:
-        await client.handle_error(e, interaction)
+        retry = False
+        retry = await client.handle_error(e, interaction, link=link, retry=retry)
+        if retry: 
+            try:
+                client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
+            except:
+                await client.handle_error(e, interaction, link=link, retry=retry)
     finally:
         driver.quit()
 
@@ -596,7 +616,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             if word.startswith("@"):
                 username = word
         if username == '@11adrian19':
-            await interaction.followup.send('<' + link + '>')
+            await interaction.followup.send(link)
             await interaction.followup.send("No free views")
             return
         
@@ -668,7 +688,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                 content='Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'
                 await client.generic_message(content, ephemeral=True)
     except Exception as e:
-        await client.handle_error(e, interaction)
+        await client.handle_error(e, interaction, link=link)
     finally:
         driver.quit()
 
