@@ -121,11 +121,11 @@ class MyClient(discord.Client):
         if isinstance(e, OSError):
             if str(e).startswith('No connection adapters were found for'):
                 print('[DEBUG TRACE] Blob link detected: ', e, '\n')
-                if retry == 1:
+                if retry < 5:
+                    return retry
+                else:
                     if isinstance(ctx, discord.Interaction):
                         return await ctx.followup.send('If at first you don\'t succeed, try and try again', ephemeral=True) 
-                else:
-                    return 1
             elif str(e).startswith('Invalid URL '):
                 print('[DEBUG TRACE] Invalid URL Error: ', e, '\n')
                 await send_response('CODED INCORRECTLY')
@@ -425,17 +425,24 @@ class MyClient(discord.Client):
             except Exception as e:
                 await self.handle_error(e, message)
         except Exception as e:
-            retry = 0
-            retry = await self.handle_error(e, message, retry=retry)
-            if retry == 1: 
-                try:
-                    print('[DEBUG TRACE] Blob link detected. Retrying...')
-                    driver.quit()
-                    driver = webdriver.Chrome(options=options)
-                    await self.web_scrape(driver, message, headers, spoilerwarning)
-                except:
-                    print('[DEBUG TRACE] Retry failed')
-                    await self.handle_error(e, message, retry=retry)
+            if not (isinstance(e, OSError) and str(e).startswith('No connection adapters were found for')): 
+                await self.handle_error(e, message)
+            else:
+                retry_count = 0
+                while retry_count < 5: 
+                    try:
+                        print(f'[DEBUG TRACE] Blob link detected. Retrying... {retry_count+1}/5')
+                        driver.quit()
+                        driver = webdriver.Chrome(options=options)
+                        await self.web_scrape(driver, message, headers, spoilerwarning)
+                        break
+                    except Exception as inner_e:
+                        print('[DEBUG TRACE] Retry failed')
+                        retry_count +=1
+                        await self.handle_error(inner_e, message, retry=retry_count)
+
+                        if retry_count >= 5: 
+                            print('[DEBUG TRACE] Max retries reached, giving up.')
         finally:
             driver.quit()
 
