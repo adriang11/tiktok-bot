@@ -564,7 +564,7 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
         await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
     except Exception as e:
         if not (isinstance(e, OSError) and str(e).startswith('No connection adapters were found for')): 
-            await client.handle_error(e, interaction)
+            await client.handle_error(e, interaction, link=link)
         else:
             retry_count = 0
             while retry_count < 5: 
@@ -577,7 +577,7 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
                 except Exception as inner_e:
                     print('[DEBUG TRACE] Retry failed')
                     retry_count +=1
-                    await client.handle_error(inner_e, interaction, retry=retry_count)
+                    await client.handle_error(inner_e, interaction, link=link, retry=retry_count)
 
                     if retry_count >= 5: 
                         print('[DEBUG TRACE] Max retries reached, giving up.')
