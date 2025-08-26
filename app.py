@@ -148,8 +148,8 @@ class MyClient(discord.Client):
                 if isinstance(ctx, discord.Message):
                     return await ctx.reply('enough.', mention_author=True, delete_after=30)
                 elif isinstance(ctx, discord.Interaction):
-                    await ctx.followup.send('File exceeds the size limit allowed on Discord. But just for you, imma send the link anyway so you can watch it on the Discord embed :D Also tell sharia that his bot needs to NOT respond to links sent by another bot', ephemeral=True)
-                    return await ctx.channel.send(link) 
+                    await ctx.followup.send(link)
+                    return await ctx.followup.send('File exceeds the size limit allowed on Discord. But just for you, imma send the link anyway so you can watch it on the Discord embed :D Also tell sharia that his bot needs to NOT respond to links sent by another bot', ephemeral=True)
             else:
                 print('oopsies\n')
                 traceback.print_exc()
@@ -223,7 +223,7 @@ class MyClient(discord.Client):
             if isinstance(ctx, discord.Message):
                 await ctx.reply("No free views")
             elif isinstance(ctx, discord.Interaction):
-                await ctx.followup.send(link )
+                await ctx.followup.send(link)
                 await ctx.followup.send("No free views", ephemeral=True)
             return
         
