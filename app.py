@@ -563,17 +563,24 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
     try:
         await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
     except Exception as e:
-        retry = 0
-        retry = await client.handle_error(e, interaction, link=link, retry=retry)
-        if retry == 1: 
-            try:
-                print('[DEBUG TRACE] Blob link detected. Retrying...')
-                driver.quit()
-                driver = webdriver.Chrome(options=options)
-                await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
-            except:
-                print('[DEBUG TRACE] Retry failed')
-                await client.handle_error(e, interaction, link=link, retry=retry)
+        if not (isinstance(e, OSError) and str(e).startswith('No connection adapters were found for')): 
+            await client.handle_error(e, interaction)
+        else:
+            retry_count = 0
+            while retry_count < 5: 
+                try:
+                    print(f'[DEBUG TRACE] Blob link detected. Retrying... {retry_count+1}/5')
+                    driver.quit()
+                    driver = webdriver.Chrome(options=options)
+                    await client.web_scrape(driver, interaction, headers, spoilerwarning)
+                    break
+                except Exception as inner_e:
+                    print('[DEBUG TRACE] Retry failed')
+                    retry_count +=1
+                    await client.handle_error(inner_e, interaction, retry=retry_count)
+
+                    if retry_count >= 5: 
+                        print('[DEBUG TRACE] Max retries reached, giving up.')
     finally:
         driver.quit()
 
