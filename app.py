@@ -572,7 +572,7 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
                     print(f'[DEBUG TRACE] Blob link detected. Retrying... {retry_count+1}/5')
                     driver.quit()
                     driver = webdriver.Chrome(options=options)
-                    await client.web_scrape(driver, interaction, headers, spoilerwarning)
+                    await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
                     break
                 except Exception as inner_e:
                     print('[DEBUG TRACE] Retry failed')
