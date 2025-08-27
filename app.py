@@ -415,7 +415,7 @@ class MyClient(discord.Client):
             try:
                 await self.process_slideshow(driver, message, headers, spoilerwarning)
             except TimeoutException as e:
-                print('[DEBUG TRACE] Timeout Exception. Retrying...')
+                print('[DEBUG TRACE] Timeout Exception. Retrying...', '\n')
                 await message.reply("Something went wrong. Retrying...", mention_author=True, delete_after=3)
                 # retry logic:
                 try:
@@ -426,19 +426,19 @@ class MyClient(discord.Client):
                 await self.handle_error(e, message)
         except Exception as e:
             if not (isinstance(e, OSError) and str(e).startswith('No connection adapters were found for')): 
-                print(f'[DEBUG TRACE] Non-blob related error detected')
+                print(f'[DEBUG TRACE] Non-blob related error detected', '\n')
                 await self.handle_error(e, message)
             else:
                 retry_count = 0
                 while retry_count < 5: 
                     try:
-                        print(f'[DEBUG TRACE] Blob link detected. Retrying... {retry_count+1}/5')
+                        print(f'[DEBUG TRACE] Blob link detected. Retrying... {retry_count+1}/5', '\n')
                         driver.quit()
                         driver = webdriver.Chrome(options=options)
                         await self.web_scrape(driver, message, headers, spoilerwarning)
                         break
                     except Exception as inner_e:
-                        print('[DEBUG TRACE] Retry failed')
+                        print('[DEBUG TRACE] Retry failed', '\n')
                         retry_count +=1
                         sent = await self.handle_error(inner_e, message, retry=retry_count)
 
@@ -567,26 +567,26 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
         await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
     except Exception as e:
         if not (isinstance(e, OSError) and str(e).startswith('No connection adapters were found for')): 
-            print(f'[DEBUG TRACE] Non-blob related error detected')
+            print(f'[DEBUG TRACE] Non-blob related error detected', '\n')
             await client.handle_error(e, interaction, link=link)
         else:
             retry_count = 0
             while retry_count < 5: 
                 try:
-                    print(f'[DEBUG TRACE] Blob link detected. Retrying... {retry_count+1}/5')
+                    print(f'[DEBUG TRACE] Blob link detected. Retrying... {retry_count+1}/5', '\n')
                     driver.quit()
                     driver = webdriver.Chrome(options=options)
                     await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
                     break
                 except Exception as inner_e:
-                    print('[DEBUG TRACE] Retry failed')
+                    print('[DEBUG TRACE] Retry failed', '\n')
                     retry_count +=1
                     sent = await client.handle_error(inner_e, interaction, link=link, retry=retry_count)
 
                     if not isinstance(sent, (int, float)): break
 
                     if retry_count >= 5: 
-                        print('[DEBUG TRACE] Max retries reached, giving up.')
+                        print('[DEBUG TRACE] Max retries reached, giving up.', '\n')
     finally:
         driver.quit()
 
