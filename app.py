@@ -149,8 +149,7 @@ class MyClient(discord.Client):
                     return await ctx.reply('enough.', mention_author=True, delete_after=30)
                 elif isinstance(ctx, discord.Interaction):
                     await ctx.followup.send(link)
-                    await ctx.followup.send('File exceeds the size limit allowed on Discord. But just for you, imma send the link anyway so you can watch it on the Discord embed :D Also tell sharia that his bot needs to NOT respond to links sent by another bot', ephemeral=True)
-                    return
+                    return await ctx.followup.send('File exceeds the size limit allowed on Discord. But just for you, imma send the link anyway so you can watch it on the Discord embed :D Also tell sharia that his bot needs to NOT respond to links sent by another bot', ephemeral=True)
             else:
                 print('oopsies\n')
                 traceback.print_exc()
@@ -427,6 +426,7 @@ class MyClient(discord.Client):
                 await self.handle_error(e, message)
         except Exception as e:
             if not (isinstance(e, OSError) and str(e).startswith('No connection adapters were found for')): 
+                print(f'[DEBUG TRACE] Non-blob related error detected')
                 await self.handle_error(e, message)
             else:
                 retry_count = 0
@@ -440,7 +440,9 @@ class MyClient(discord.Client):
                     except Exception as inner_e:
                         print('[DEBUG TRACE] Retry failed')
                         retry_count +=1
-                        await self.handle_error(inner_e, message, retry=retry_count)
+                        sent = await self.handle_error(inner_e, message, retry=retry_count)
+
+                        if not isinstance(sent, (int, float)): break
 
                         if retry_count >= 5: 
                             print('[DEBUG TRACE] Max retries reached, giving up.')
@@ -565,6 +567,7 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
         await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
     except Exception as e:
         if not (isinstance(e, OSError) and str(e).startswith('No connection adapters were found for')): 
+            print(f'[DEBUG TRACE] Non-blob related error detected')
             await client.handle_error(e, interaction, link=link)
         else:
             retry_count = 0
@@ -578,7 +581,9 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
                 except Exception as inner_e:
                     print('[DEBUG TRACE] Retry failed')
                     retry_count +=1
-                    await client.handle_error(inner_e, interaction, link=link, retry=retry_count)
+                    sent = await client.handle_error(inner_e, interaction, link=link, retry=retry_count)
+
+                    if not isinstance(sent, (int, float)): break
 
                     if retry_count >= 5: 
                         print('[DEBUG TRACE] Max retries reached, giving up.')
