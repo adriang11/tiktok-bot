@@ -116,6 +116,7 @@ class MyClient(discord.Client):
             if isinstance(ctx, discord.Message):
                 return await ctx.reply(content, mention_author=mention_author, delete_after=delete_after)
             elif isinstance(ctx, discord.Interaction):
+                await ctx.followup.send(link) 
                 return await ctx.followup.send(content, ephemeral=True) 
 
         if isinstance(e, OSError):
@@ -445,7 +446,7 @@ class MyClient(discord.Client):
                         if not isinstance(sent, (int, float)): break
 
                         if retry_count >= 5: 
-                            print('[DEBUG TRACE] Max retries reached, giving up.')
+                            print('[DEBUG TRACE] Max retries reached, giving up.',  '\n')
         finally:
             driver.quit()
 
@@ -715,7 +716,10 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                 content='Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'
                 await client.generic_message(content, ephemeral=True)
     except Exception as e:
-        await client.handle_error(e, interaction, link=link)
+        if (isinstance(e, OSError) and str(e).startswith('No connection adapters were found for')):
+            return await interaction.followup.send('If at first you don\'t succeed, try and try again', ephemeral=True) 
+        else:
+            await client.handle_error(e, interaction, link=link)
     finally:
         driver.quit()
 
