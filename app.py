@@ -17,6 +17,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import ElementClickInterceptedException
+from selenium.common.exceptions import InvalidArgumentException
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
@@ -120,22 +122,20 @@ class MyClient(discord.Client):
                 return await ctx.followup.send(content, ephemeral=True) 
 
         if isinstance(e, OSError):
-            if str(e).startswith('No connection adapters were found for'):
-                print('[DEBUG TRACE] Blob link detected: ', e, '\n')
-                if retry < 5:
-                    return retry
-                else:
-                    if isinstance(ctx, discord.Interaction):
-                        return await ctx.followup.send('If at first you don\'t succeed, try and try again', ephemeral=True) 
-            elif str(e).startswith('Invalid URL '):
-                print('[DEBUG TRACE] Invalid URL Error: ', e, '\n')
-                await send_response('CODED INCORRECTLY')
-            else:
-                print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
-                await send_response('Bot is working on another thing. Count to 10 and try again.')
+            print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
+            await send_response('Bot is working on another thing. Count to 10 and try again.')
         elif isinstance(e, TimeoutException):
             print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
             await send_response('Failure.')
+        elif isinstance(e, InvalidArgumentException):
+            print('[DEBUG TRACE] InvalidArgumentException caught: ', e.msg, '\n')
+            await send_response('Please send a valid tiktok link...')
+        elif isinstance(e, ElementClickInterceptedException):
+            print('[DEBUG TRACE] ElementClickInterceptedException caught: ', e.msg, '\n')
+            if retry < 5:
+                return retry
+            else:
+                await send_response('Curse you bloddy Captcha...')
         elif isinstance(e, SessionNotCreatedException):
             print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
             await send_response('[ERROR] Session not created: please notify Adrian to update Chromedriver')
@@ -165,11 +165,10 @@ class MyClient(discord.Client):
 
     async def generic_output(self, ctx, *, link="", spoilerwarning=False):
         if isinstance(ctx, discord.Message):
-            await ctx.reply(file=discord.File('output.mp4', spoiler=spoilerwarning))
+            await ctx.reply(file=discord.File('Download.mp4', spoiler=spoilerwarning))
         elif isinstance(ctx, discord.Interaction):
             await ctx.followup.send('<' + link + '>')
-            await ctx.channel.send(file=discord.File('output.mp4', spoiler=spoilerwarning))
-
+            await ctx.channel.send(file=discord.File('Download.mp4', spoiler=spoilerwarning))
 
     async def run_prechecks(self, driver, ctx, spoilerwarning, *, userinput=None):
         # strip link from message if appicable
@@ -244,37 +243,30 @@ class MyClient(discord.Client):
 
             await self.breakpoint("4 - Video element detected:", driver, ctx)
             
-            try:
-                source = element.find_element(By.TAG_NAME, 'source') 
-                url = source.get_attribute('src')
-                
-                # if(url.startswith('blob')): url = url[5:]
-                
-                print(f'[DEBUG TRACE] video source: {url}\n')
-            except NoSuchElementException as e:
-                # try old logic:
-                url = element.get_attribute('src')
-                print(f'[DEBUG TRACE] erm ACTUALLY, this is the video source: {url}\n')
+            # Right-click on the video 
+            ActionChains(driver).move_to_element(element).context_click().perform()
 
-            # except StaleElementReferenceException:
-            #     print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
-            #     driver.refresh()
-            #     element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
-            #     source = element.find_element(By.TAG_NAME, 'source')
-            #     url = source.get_attribute('src')
+            print(f'[DEBUG TRACE] right click initiated\n')
 
-            return url
-        
+            # Wait for the TikTok context menu to show up
+            download_button = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.XPATH, "//span[contains(text(), 'Download video')]"))
+            )
+
+            print(f'[DEBUG TRACE] Download button found\n')
+
+            return download_button
         except TimeoutException as e:
             await self.breakpoint("2 - After Metadata:", driver, ctx)
 
-            print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
-
-            photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
-
-            if photoscheck:  
+            print('[DEBUG TRACE] TimeoutException caught, Testing for slideshow: ', e.msg, '\n')
+            try:
+                photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
                 print('[DEBUG TRACE] Photos found\n')
                 return
+            except:
+                print('[DEBUG TRACE] Captcha blocked\n')
+                raise ElementClickInterceptedException
 
     async def web_scrape(self, driver, ctx, headers, spoilerwarning, *, userinput=None):
             print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
@@ -282,49 +274,39 @@ class MyClient(discord.Client):
             link = await self.run_prechecks(driver, ctx, spoilerwarning, userinput=userinput)
             if link is None: return
         
-            url = await self.find_video(driver, ctx)
+            download_button = await self.find_video(driver, ctx)
 
-            if url is None:
+            if download_button is None:
                 await self.process_slideshow(driver, ctx, headers, spoilerwarning, userinput=link)
             else:
-                all_cookies = driver.get_cookies()
-                cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
-
-                r = requests.get(url, cookies=cookies, headers=headers)
-                
-                if os.path.exists('output.mp4'):
-                    os.remove('output.mp4')
+                if os.path.exists('Download.mp4'):
+                    os.remove('Download.mp4')
                     print('[DEBUG TRACE] file removed\n')
+                
+                download_button.click()
 
-                if r.status_code == 200:
-                    with open('output.mp4', 'wb') as f:
-                        f.write(r.content)
-                    print('[DEBUG TRACE] video downloaded\n')
+                time.sleep(2)
 
-                    # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
-                    os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
-                    log_file = open("log.txt","r")
-                    log_file_content = log_file.read()
-                    print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+                print('[DEBUG TRACE] video downloaded\n')
 
-                    if 'h264' not in log_file_content:
-                        print('[DEBUG TRACE] Hevc file detected. Checking for photos...\n')
-                        
-                        if isinstance(ctx, discord.Message):
-                            await ctx.reply('Crisis averted... Thank me later', mention_author=True, delete_after=2)
-                            await self.process_slideshow(driver, ctx, headers, spoilerwarning)
-                        elif isinstance(ctx, discord.Interaction):
-                            await self.process_slideshow(driver, ctx, headers, spoilerwarning)
-                    else:
-                        await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
-                        print('[DEBUG TRACE] file sent\n')
-                        self.lastlink = link
+                # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
+                os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 Download.mp4 > log.txt 2>&1")
+                log_file = open("log.txt","r")
+                log_file_content = log_file.read()
+                print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+
+                if 'hevc' in log_file_content:
+                    print('[DEBUG TRACE] Hevc file detected. Checking for photos...\n')
+                    
+                    if isinstance(ctx, discord.Message):
+                        await ctx.reply('Crisis averted... Thank me later', mention_author=True, delete_after=2)
+                        await self.process_slideshow(driver, ctx, headers, spoilerwarning)
+                    elif isinstance(ctx, discord.Interaction):
+                        await self.process_slideshow(driver, ctx, headers, spoilerwarning)
                 else:
-                    print(r.status_code, '\n')
-                    content='Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'
-                    await self.generic_message(content, ephemeral=True)
-
-                # time.sleep(30)
+                    await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
+                    print('[DEBUG TRACE] file sent\n')
+                    #self.lastlink = link
     
     async def process_slideshow(self, driver, ctx, headers, spoilerwarning, *, userinput=None):
                 print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
@@ -397,8 +379,13 @@ class MyClient(discord.Client):
 
         service = Service(executable_path=CHROME_DRIVER_PATH)
 
+        currdir = os.getcwd()
+        prefs = {"download.default_directory": currdir} # Specify Chrome download directory
+
         options = webdriver.ChromeOptions()
+        options.add_experimental_option("prefs", prefs)
         options.add_argument('--headless=new')
+        options.add_argument("--window-size=1920,1080") 
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--no-sandbox')
         options.add_argument(f"user-agent={headers}")
@@ -410,30 +397,15 @@ class MyClient(discord.Client):
         try:
             if '.tiktok.com/' in message.content and '/@' not in message.content:
                 await self.web_scrape(driver, message, headers, spoilerwarning)
-   
-        except NoSuchElementException as e:
-            print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
-            try:
-                await self.process_slideshow(driver, message, headers, spoilerwarning)
-            except TimeoutException as e:
-                print('[DEBUG TRACE] Timeout Exception. Retrying...', '\n')
-                await message.reply("Something went wrong. Retrying...", mention_author=True, delete_after=3)
-                # retry logic:
-                try:
-                    await self.web_scrape(driver, message, headers, spoilerwarning)
-                except:
-                    await self.handle_error(e, message)
-            except Exception as e:
-                await self.handle_error(e, message)
         except Exception as e:
-            if not (isinstance(e, OSError) and str(e).startswith('No connection adapters were found for')): 
-                print(f'[DEBUG TRACE] Non-blob related error detected', '\n')
+            if not (isinstance(e, ElementClickInterceptedException)): 
+                print(f'[DEBUG TRACE] Standard error detected', '\n')
                 await self.handle_error(e, message)
             else:
                 retry_count = 0
                 while retry_count < 5: 
                     try:
-                        print(f'[DEBUG TRACE] Blob link detected. Retrying... {retry_count+1}/5', '\n')
+                        print(f'[DEBUG TRACE] Outmaneuvered. Retrying... {retry_count+1}/5', '\n')
                         driver.quit()
                         driver = webdriver.Chrome(options=options)
                         await self.web_scrape(driver, message, headers, spoilerwarning)
@@ -556,8 +528,13 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
     
     spoilerwarning = spoilered == "true"
 
+    currdir = os.getcwd()
+    prefs = {"download.default_directory": currdir} # Specify Chrome download directory
+
     options = webdriver.ChromeOptions()
+    options.add_experimental_option("prefs", prefs)
     options.add_argument('--headless=new')
+    options.add_argument("--window-size=1920,1080") 
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--no-sandbox')
     options.add_argument(f"user-agent={headers}")
@@ -567,14 +544,14 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
     try:
         await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
     except Exception as e:
-        if not (isinstance(e, OSError) and str(e).startswith('No connection adapters were found for')): 
-            print(f'[DEBUG TRACE] Non-blob related error detected', '\n')
+        if not (isinstance(e, ElementClickInterceptedException)): 
+            print(f'[DEBUG TRACE] Standard error detected', '\n')
             await client.handle_error(e, interaction, link=link)
         else:
             retry_count = 0
             while retry_count < 5: 
                 try:
-                    print(f'[DEBUG TRACE] Blob link detected. Retrying... {retry_count+1}/5', '\n')
+                    print(f'[DEBUG TRACE] Outmaneuvered. Retrying... {retry_count+1}/5', '\n')
                     driver.quit()
                     driver = webdriver.Chrome(options=options)
                     await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
@@ -597,8 +574,13 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
     
     spoilerwarning = spoilered == "true"
 
+    currdir = os.getcwd()
+    prefs = {"download.default_directory": currdir} # Specify Chrome download directory
+
     options = webdriver.ChromeOptions()
+    options.add_experimental_option("prefs", prefs)
     options.add_argument('--headless=new')
+    options.add_argument("--window-size=1920,1080") 
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--no-sandbox')
     options.add_argument(f"user-agent={headers}")
@@ -673,53 +655,47 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             await interaction.channel.send(fulldesc)
             return
 
-        url = await client.find_video(driver, interaction)
+        download_button = await client.find_video(driver, interaction)
 
-        if url is None:
+        if download_button is None:
             await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
             if header: await interaction.channel.send(header)
             await interaction.channel.send(fulldesc)
         else:
-            all_cookies = driver.get_cookies()
-            cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
-
-            r = requests.get(url, cookies=cookies, headers=headers)
-            
-            if os.path.exists('output.mp4'):
-                os.remove('output.mp4')
+            if os.path.exists('Download.mp4'):
+                os.remove('Download.mp4')
                 print('[DEBUG TRACE] file removed\n')
+            
+            download_button.click()
 
-            if r.status_code == 200:
-                with open('output.mp4', 'wb') as f:
-                    f.write(r.content)
-                print('[DEBUG TRACE] video downloaded\n')
+            time.sleep(2)
 
-                # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
-                os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
-                log_file = open("log.txt","r")
-                log_file_content = log_file.read()
-                print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+            print('[DEBUG TRACE] video downloaded\n')
 
-                if 'h264' not in log_file_content:
-                    print('[DEBUG TRACE] Hevc file detected. Checking for photos...\n')
-                    await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
-                    if header: await interaction.channel.send(header)
-                    await interaction.channel.send(fulldesc)
-                else:
-                    await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
-                    if header: await interaction.channel.send(header)
-                    await interaction.channel.send(fulldesc)
-                    print('[DEBUG TRACE] file sent\n')
-                    client.lastlink = link
+            # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
+            os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 Download.mp4 > log.txt 2>&1")
+            log_file = open("log.txt","r")
+            log_file_content = log_file.read()
+            print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+
+            if 'hevc' in log_file_content:
+                await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
+                if header: await interaction.channel.send(header)
+                await interaction.channel.send(fulldesc)
             else:
-                print(r.status_code, '\n')
-                content='Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'
-                await client.generic_message(content, ephemeral=True)
+                await interaction.followup.send('<' + link + '>')
+                await interaction.channel.send(file=discord.File('Download.mp4', spoiler=spoilerwarning))
+                if header: await interaction.channel.send(header)
+                await interaction.channel.send(fulldesc)
+                print('[DEBUG TRACE] file sent\n')
+                client.lastlink = link
+        
     except Exception as e:
-        if (isinstance(e, OSError) and str(e).startswith('No connection adapters were found for')):
-            return await interaction.followup.send('If at first you don\'t succeed, try and try again', ephemeral=True) 
-        else:
+        if not (isinstance(e, ElementClickInterceptedException)): 
             await client.handle_error(e, interaction, link=link)
+        else:
+            return await interaction.followup.send('If at first you don\'t succeed, try and try again', ephemeral=True) 
+
     finally:
         driver.quit()
 
