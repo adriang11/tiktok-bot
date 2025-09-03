@@ -1,6 +1,7 @@
 import os
 import base64
 import discord
+import gdshortener
 import shutil
 import tempfile
 import time
@@ -111,6 +112,15 @@ class MyClient(discord.Client):
         if self.debugmode: 
             driver.get_screenshot_as_file("screenshot.png")
             await message.reply(f"{content}", file=discord.File('screenshot.png'))
+
+    async def handle_large_upload(self, ctx, cdn_url):
+        s = gdshortener.ISGDShortener()
+        short = s.shorten(cdn_url)
+
+        if isinstance(ctx, discord.Message):
+            await ctx.reply(short)
+        elif isinstance(ctx, discord.Interaction):
+            await ctx.followup.send(short)
 
     async def handle_error(self, e, ctx, *, link="", retry=0):
         async def send_response(content, *, mention_author=True, delete_after=30):
@@ -387,6 +397,7 @@ class MyClient(discord.Client):
         options.add_argument('--headless=new')
         options.add_argument("--window-size=1920,1080") 
         options.add_argument('--disable-dev-shm-usage')
+        options.add_argument("--disable-gpu")
         options.add_argument('--no-sandbox')
         options.add_argument(f"user-agent={headers}")
 
@@ -415,10 +426,10 @@ class MyClient(discord.Client):
                         retry_count +=1
                         sent = await self.handle_error(inner_e, message, retry=retry_count)
 
-                        if not isinstance(sent, (int, float)): break
-
                         if retry_count >= 5: 
                             print('[DEBUG TRACE] Max retries reached, giving up.',  '\n')
+
+                        if not isinstance(sent, (int, float)): break
         finally:
             driver.quit()
 
