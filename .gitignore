@@ -1,7 +1,9 @@
 .env
 output.mp4
+Download.mp4
 log.txt
 node_modules/
 __pycache__
+screenshot.png
 wisdomadrian.txt
 wisdomdiv.txt

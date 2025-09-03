@@ -1,6 +1,7 @@
 import os
 import base64
 import discord
+import gdshortener
 import shutil
 import tempfile
 import time
@@ -17,6 +18,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import InvalidArgumentException
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
@@ -110,6 +112,15 @@ class MyClient(discord.Client):
             driver.get_screenshot_as_file("screenshot.png")
             await message.reply(f"{content}", file=discord.File('screenshot.png'))
 
+    async def handle_large_upload(self, ctx, cdn_url):
+        s = gdshortener.ISGDShortener()
+        short = s.shorten(cdn_url)
+
+        if isinstance(ctx, discord.Message):
+            await ctx.reply(short)
+        elif isinstance(ctx, discord.Interaction):
+            await ctx.followup.send(short)
+
     async def handle_error(self, e, ctx, *, link="", retry=0):
         async def send_response(content, *, mention_author=True, delete_after=30):
             # Handle both discord.Message and discord.Interaction
@@ -133,6 +144,9 @@ class MyClient(discord.Client):
             else:
                 print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
                 await send_response('Bot is working on another thing. Count to 10 and try again.')
+        elif isinstance(e, InvalidArgumentException):
+            print('[DEBUG TRACE] InvalidArgumentException caught: ', e.msg, '\n')
+            await send_response('Please send a valid tiktok link...')
         elif isinstance(e, TimeoutException):
             print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
             await send_response('Failure.')
@@ -248,20 +262,11 @@ class MyClient(discord.Client):
                 source = element.find_element(By.TAG_NAME, 'source') 
                 url = source.get_attribute('src')
                 
-                # if(url.startswith('blob')): url = url[5:]
-                
                 print(f'[DEBUG TRACE] video source: {url}\n')
             except NoSuchElementException as e:
                 # try old logic:
                 url = element.get_attribute('src')
                 print(f'[DEBUG TRACE] erm ACTUALLY, this is the video source: {url}\n')
-
-            # except StaleElementReferenceException:
-            #     print('[DEBUG TRACE] Stale element found in src. Retrying...\n')
-            #     driver.refresh()
-            #     element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
-            #     source = element.find_element(By.TAG_NAME, 'source')
-            #     url = source.get_attribute('src')
 
             return url
         
@@ -307,7 +312,7 @@ class MyClient(discord.Client):
                     log_file_content = log_file.read()
                     print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
 
-                    if 'h264' not in log_file_content:
+                    if 'hevc' in log_file_content:
                         print('[DEBUG TRACE] Hevc file detected. Checking for photos...\n')
                         
                         if isinstance(ctx, discord.Message):
@@ -316,9 +321,15 @@ class MyClient(discord.Client):
                         elif isinstance(ctx, discord.Interaction):
                             await self.process_slideshow(driver, ctx, headers, spoilerwarning)
                     else:
-                        await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
-                        print('[DEBUG TRACE] file sent\n')
-                        self.lastlink = link
+                        try:
+                            await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
+                            print('[DEBUG TRACE] file sent\n')
+                            self.lastlink = link
+                        except discord.HTTPException as e:
+                            if e.code == 50045:
+                                await self.handle_large_upload(ctx, url)
+                            else:
+                                raise
                 else:
                     print(r.status_code, '\n')
                     content='Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'
@@ -399,7 +410,9 @@ class MyClient(discord.Client):
 
         options = webdriver.ChromeOptions()
         options.add_argument('--headless=new')
+        options.add_argument("--window-size=1920,1080")
         options.add_argument('--disable-dev-shm-usage')
+        options.add_argument("--disable-gpu")
         options.add_argument('--no-sandbox')
         options.add_argument(f"user-agent={headers}")
 
@@ -410,30 +423,15 @@ class MyClient(discord.Client):
         try:
             if '.tiktok.com/' in message.content and '/@' not in message.content:
                 await self.web_scrape(driver, message, headers, spoilerwarning)
-   
-        except NoSuchElementException as e:
-            print('[DEBUG TRACE] NoSuchElement caught, Testing for slideshow: ', e, '\n')
-            try:
-                await self.process_slideshow(driver, message, headers, spoilerwarning)
-            except TimeoutException as e:
-                print('[DEBUG TRACE] Timeout Exception. Retrying...', '\n')
-                await message.reply("Something went wrong. Retrying...", mention_author=True, delete_after=3)
-                # retry logic:
-                try:
-                    await self.web_scrape(driver, message, headers, spoilerwarning)
-                except:
-                    await self.handle_error(e, message)
-            except Exception as e:
-                await self.handle_error(e, message)
         except Exception as e:
             if not (isinstance(e, OSError) and str(e).startswith('No connection adapters were found for')): 
-                print(f'[DEBUG TRACE] Non-blob related error detected', '\n')
+                print(f'[DEBUG TRACE] Standard error detected', '\n')
                 await self.handle_error(e, message)
             else:
                 retry_count = 0
                 while retry_count < 5: 
                     try:
-                        print(f'[DEBUG TRACE] Blob link detected. Retrying... {retry_count+1}/5', '\n')
+                        print(f'[DEBUG TRACE] Standard error detected. Retrying... {retry_count+1}/5', '\n')
                         driver.quit()
                         driver = webdriver.Chrome(options=options)
                         await self.web_scrape(driver, message, headers, spoilerwarning)
@@ -443,10 +441,10 @@ class MyClient(discord.Client):
                         retry_count +=1
                         sent = await self.handle_error(inner_e, message, retry=retry_count)
 
-                        if not isinstance(sent, (int, float)): break
-
                         if retry_count >= 5: 
                             print('[DEBUG TRACE] Max retries reached, giving up.',  '\n')
+
+                        if not isinstance(sent, (int, float)): break
         finally:
             driver.quit()
 
