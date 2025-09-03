@@ -1,6 +1,7 @@
 .env
 output.mp4
 Download.mp4
+screenshot.png
 log.txt
 node_modules/
 __pycache__

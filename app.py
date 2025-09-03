@@ -265,7 +265,7 @@ class MyClient(discord.Client):
                 print('[DEBUG TRACE] Photos found\n')
                 return
             except:
-                print('[DEBUG TRACE] Captcha blocked\n')
+                print('[DEBUG TRACE] NOT  a slideshow\n')
                 raise ElementClickInterceptedException
 
     async def web_scrape(self, driver, ctx, headers, spoilerwarning, *, userinput=None):
@@ -306,7 +306,7 @@ class MyClient(discord.Client):
                 else:
                     await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
                     print('[DEBUG TRACE] file sent\n')
-                    #self.lastlink = link
+                    self.lastlink = link
     
     async def process_slideshow(self, driver, ctx, headers, spoilerwarning, *, userinput=None):
                 print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
