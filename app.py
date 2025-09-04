@@ -25,6 +25,7 @@ from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
 from statics import acronym_list
+from statics import friends
 from statics import headers
 from toolz import get_in
 from typing import Optional
@@ -324,25 +325,6 @@ class MyClient(discord.Client):
                             await self.handle_large_upload(ctx, url)
                         else:
                             raise
-
-                    # if 'hevc' in log_file_content:
-                    #     print('[DEBUG TRACE] Hevc file detected. Checking for photos...\n')
-                        
-                    #     if isinstance(ctx, discord.Message):
-                    #         await ctx.reply('Crisis averted... Thank me later', mention_author=True, delete_after=2)
-                    #         await self.process_slideshow(driver, ctx, headers, spoilerwarning)
-                    #     elif isinstance(ctx, discord.Interaction):
-                    #         await self.process_slideshow(driver, ctx, headers, spoilerwarning)
-                    # else:
-                    #     try:
-                    #         await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
-                    #         print('[DEBUG TRACE] file sent\n')
-                    #         self.lastlink = link
-                    #     except discord.HTTPException as e:
-                    #         if e.code == 40005:
-                    #             await self.handle_large_upload(ctx, url)
-                    #         else:
-                    #             raise
                 else:
                     print(r.status_code, '\n')
                     content='Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'
@@ -459,6 +441,12 @@ async def coinflip(interaction: discord.Interaction):
         await interaction.response.send_message("Heads!")
     else:
         await interaction.response.send_message("Tails!")
+
+@client.tree.command(name = "blame", description = "Tells you exactly who to blame for anything") 
+async def blame(interaction: discord.Interaction):
+    friend = random.choice(friends)
+    print("Blame game played: ", friend)
+    await interaction.response.send_message("This is clearly " + friend.title() + "\'s fault")
 
 @client.tree.command(name = "wisdom", description = "Receive a random wisdom from Pascal the Sea Otter") 
 async def daily_wisdom(interaction: discord.Interaction):
