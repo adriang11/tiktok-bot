@@ -186,7 +186,7 @@ class MyClient(discord.Client):
             await ctx.channel.send(file=discord.File('output.mp4', spoiler=spoilerwarning))
 
 
-    async def run_prechecks(self, driver, ctx, spoilerwarning, *, userinput=None):
+    async def run_prechecks(self, driver, ctx, spoilerwarning, *, userinput=None, override=False):
         # strip link from message if appicable
         if isinstance(ctx, discord.Message):
             link = ctx.content
@@ -216,6 +216,7 @@ class MyClient(discord.Client):
             for words in maturecontent:
                 if words.text == 'Log in to TikTok':
                     print(f'[DEBUG TRACE] Mature content detected\n')
+                    if isinstance(ctx, discord.Interaction): await ctx.followup.send(link)
                     await self.generic_message(ctx, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=True)
                     return
         except:
@@ -227,22 +228,23 @@ class MyClient(discord.Client):
 
         no_free_views = ['@11adrian19','@rn.vg','@mnymchns','@po0japanchal']
 
-        user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
-        url = user.get_attribute("content")
-        lst = url.split('/')
-        
-        for word in lst:
-            if word.startswith("@"):
-                username = word
-        if username in no_free_views:
-            if isinstance(ctx, discord.Message):
-                await ctx.reply("No free views")
-            elif isinstance(ctx, discord.Interaction):
-                await ctx.followup.send(link)
-                await ctx.followup.send("No free views", ephemeral=True)
-            return
-        
-        print(f'[DEBUG TRACE] View stealing protected\n')
+        if not override:
+            user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
+            url = user.get_attribute("content")
+            lst = url.split('/')
+            
+            for word in lst:
+                if word.startswith("@"):
+                    username = word
+            if username in no_free_views:
+                if isinstance(ctx, discord.Message):
+                    await ctx.reply("No free views")
+                elif isinstance(ctx, discord.Interaction):
+                    await ctx.followup.send(link)
+                    await ctx.followup.send("No free views", ephemeral=True)
+                return
+            
+            print(f'[DEBUG TRACE] View stealing protected\n')
 
         return link
 
@@ -284,10 +286,10 @@ class MyClient(discord.Client):
                 print('[DEBUG TRACE] Photos found\n')
                 return
 
-    async def web_scrape(self, driver, ctx, headers, spoilerwarning, *, userinput=None):
+    async def web_scrape(self, driver, ctx, headers, spoilerwarning, *, userinput=None, override=False):
             print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
 
-            link = await self.run_prechecks(driver, ctx, spoilerwarning, userinput=userinput)
+            link = await self.run_prechecks(driver, ctx, spoilerwarning, userinput=userinput, override=override)
             if link is None: return
         
             url = await self.find_video(driver, ctx)
@@ -546,6 +548,34 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
 
     try:
         await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
+    except Exception as e:
+        print(f'[DEBUG TRACE] Standard error detected', '\n')
+        await client.handle_error(e, interaction, link=link)
+    finally:
+        driver.quit()
+
+@client.tree.command(name = "override", description = "Send tiktok overriding no free views")
+async def override(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
+    if interaction.user.id != 474713843181027328:
+        await interaction.response.send_message("You are not Adrian.", ephemeral=True)
+        return
+    
+    await interaction.response.defer()
+    
+    spoilerwarning = spoilered == "true"
+
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless=new')
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument("--disable-gpu")
+    options.add_argument('--no-sandbox')
+    options.add_argument(f"user-agent={headers}")
+
+    driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+
+    try:
+        await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link, override=True)
     except Exception as e:
         print(f'[DEBUG TRACE] Standard error detected', '\n')
         await client.handle_error(e, interaction, link=link)
