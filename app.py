@@ -535,11 +535,13 @@ async def test_birthday(interaction: discord.Interaction, user: discord.User = N
     members = {"1":{"Name":"rachelle","Birthday":"1/3"},
                "2":{"Name":"ruth","Birthday":"1/18"},
                "3":{"Name":"nik","Birthday":"4/24"},
-               "4":{"Name":"adrian","Birthday":"11/19"},
-               "5":{"Name":"hari","Birthday":"11/22"},
-               "6":{"Name":"sadiya","Birthday":"11/22"},
-               "7":{"Name":"Fermi","Birthday":"12/6"},
-               "8":{"Name":"Neha","Birthday":"12/19"}
+               "4":{"Name":"josh","Birthday":"7/18"},
+               "5":{"Name":"jasper","Birthday":"7/19"},
+               "6":{"Name":"adrian","Birthday":"11/19"},
+               "7":{"Name":"hari","Birthday":"11/22"},
+               "8":{"Name":"sadiya","Birthday":"11/22"},
+               "9":{"Name":"Fermi","Birthday":"12/6"},
+               "10":{"Name":"Neha","Birthday":"12/19"}
                }
 
     if user is None:
@@ -567,7 +569,6 @@ async def test_birthday(interaction: discord.Interaction, user: discord.User = N
 
         columns = 0
         newline=False
-        inline=True
 
         embed = discord.Embed(title=f"Degen Birthdays - {len(sorted_birthdays)}", color=discord.Color.blue())
         for member_id, member_data in freaky_style.items():
@@ -577,14 +578,12 @@ async def test_birthday(interaction: discord.Interaction, user: discord.User = N
 
             name = member_data["Name"]
             birthday = member_data["Birthday"]
-            embed.add_field(name=name, value=birthday, inline=inline)
+            embed.add_field(name=name, value=birthday, inline=True)
             columns+=1
-            inline=True
 
             if columns==2:
                 columns=0
                 newline=True
-                inline=False
 
         await interaction.response.send_message(embed=embed)
         
