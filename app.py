@@ -540,8 +540,8 @@ async def test_birthday(interaction: discord.Interaction, user: discord.User = N
                "6":{"Name":"adrian","Birthday":"11/19"},
                "7":{"Name":"hari","Birthday":"11/22"},
                "8":{"Name":"sadiya","Birthday":"11/22"},
-               "9":{"Name":"Fermi","Birthday":"12/6"},
-               "10":{"Name":"Neha","Birthday":"12/19"}
+               "9":{"Name":"Fermi","Birthday":"12/6"}
+            #    "10":{"Name":"Neha","Birthday":"12/19"}
                }
 
     if user is None:
