@@ -552,6 +552,10 @@ async def test_birthday(interaction: discord.Interaction, user: discord.User = N
         items = list(members.items())
 
         mid = len(items) // 2
+        
+        # If odd move midpoint over by 1
+        if mid % 2: 
+            mid+=1
 
         first_half = items[:mid]
         second_half = items[mid:]
