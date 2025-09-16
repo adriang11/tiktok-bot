@@ -530,6 +530,74 @@ async def poll(interaction: discord.Interaction, message: str, choice1: str, cho
     for i in correctsize:
         await sent.add_reaction(emojis[i])
 
+@client.tree.command(name="test_birthday", description="Display all registered birthday(s) in the server")
+async def test_birthday(interaction: discord.Interaction, user: discord.User = None):
+    members = {"1":{"Name":"rachelle","Birthday":"1/3"},
+               "2":{"Name":"ruth","Birthday":"1/18"},
+               "3":{"Name":"nik","Birthday":"4/24"},
+               "4":{"Name":"adrian","Birthday":"11/19"},
+               "5":{"Name":"hari","Birthday":"11/22"},
+               "6":{"Name":"sadiya","Birthday":"11/22"},
+               "7":{"Name":"Fermi","Birthday":"12/6"},
+               "8":{"Name":"Neha","Birthday":"12/19"}
+               }
+
+    if user is None:
+        date_format = "%m/%d"
+        
+        sorted_birthdays = members
+
+        items = list(members.items())
+
+        mid = len(items) // 2
+
+        first_half = items[:mid]
+        second_half = items[mid:]
+
+        interleaved = []
+        for a, b in zip(first_half, second_half):
+            interleaved.extend([a, b])
+
+        # If odd length, add the leftover from first_half
+        if len(first_half) > len(second_half):
+            interleaved.append(first_half[-1])
+
+        # Rebuild dictionary in new order
+        freaky_style = dict(interleaved)
+
+        columns = 0
+        newline=False
+
+        embed = discord.Embed(title=f"Degen Birthdays - {len(sorted_birthdays)}", color=discord.Color.blue())
+        for member_id, member_data in freaky_style.items():
+            if newline: 
+                embed.add_field('\t', '\t')
+                newline=False
+
+            name = member_data["Name"]
+            birthday = member_data["Birthday"]
+            embed.add_field(name=name, value=birthday, inline=False)
+            columns+=1
+
+            if columns==2:newline=True
+
+        await interaction.response.send_message(embed=embed)
+        
+    else:
+        user_id = str(user.id)
+        if user_id in members:
+            birthday = members[user_id]["Birthday"]
+            color = members[user_id]["Color"]
+            pfp = user.display_avatar
+            embed = discord.Embed(title=f"{user.display_name}'s Birthday", color=discord.Color.from_str(color))
+            embed.description = f"{birthday}"
+            embed.set_thumbnail(url=pfp)
+            await interaction.response.send_message(embed=embed)
+        else:
+            await interaction.response.send_message("This user has not registered!", ephemeral=True)
+            return
+
+
 @client.tree.command(name = "sugma", description = "Send tiktok without description")
 async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
     await interaction.response.defer()
