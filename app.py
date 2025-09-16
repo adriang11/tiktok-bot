@@ -561,7 +561,7 @@ async def test_birthday(interaction: discord.Interaction, user: discord.User = N
             interleaved.extend([a, b])
 
         # If odd length, add the leftover from first_half
-        if len(first_half) > len(second_half):
+        if len(second_half) > len(first_half):
             interleaved.append(first_half[-1])
 
         # Rebuild dictionary in new order
