@@ -571,7 +571,7 @@ async def test_birthday(interaction: discord.Interaction, user: discord.User = N
         embed = discord.Embed(title=f"Degen Birthdays - {len(sorted_birthdays)}", color=discord.Color.blue())
         for member_id, member_data in freaky_style.items():
             if newline: 
-                embed.add_field('\t', '\t')
+                embed.add_field(name='\t',value='\t')
                 newline=False
 
             name = member_data["Name"]
