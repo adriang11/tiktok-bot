@@ -532,6 +532,8 @@ async def poll(interaction: discord.Interaction, message: str, choice1: str, cho
 
 @client.tree.command(name="test_birthday", description="Display all registered birthday(s) in the server")
 async def test_birthday(interaction: discord.Interaction, user: discord.User = None):
+    print(f'[DEBUG TRACE] test birthday called', '\n')
+
     members = {"1":{"Name":"rachelle","Birthday":"1/3"},
                "2":{"Name":"ruth","Birthday":"1/18"},
                "3":{"Name":"nik","Birthday":"4/24"},
@@ -552,9 +554,12 @@ async def test_birthday(interaction: discord.Interaction, user: discord.User = N
         items = list(members.items())
 
         mid = len(items) // 2
+
+        print(f'[DEBUG TRACE] midpoint is ', mid, '\n')
         
         # If odd move midpoint over by 1
-        if mid % 2: 
+        if mid % 2:
+            print(f'[DEBUG TRACE] list is odd: ', mid, '\n')
             mid+=1
 
         first_half = items[:mid]
