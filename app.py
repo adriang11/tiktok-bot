@@ -559,8 +559,8 @@ async def test_birthday(interaction: discord.Interaction, user: discord.User = N
         
         # If odd move midpoint over by 1
         if len(items) % 2:
-            print(f'[DEBUG TRACE] list is odd: ', mid, '\n')
             mid+=1
+            print(f'[DEBUG TRACE] list is odd: ', mid, '\n')
 
         first_half = items[:mid]
         second_half = items[mid:]
@@ -570,8 +570,8 @@ async def test_birthday(interaction: discord.Interaction, user: discord.User = N
             interleaved.extend([a, b])
 
         # If odd length, add the leftover from second_half
-        if len(second_half) > len(first_half):
-            interleaved.append(second_half[-1])
+        if len(first_half) > len(second_half):
+            interleaved.append(first_half[-1])
 
         # Rebuild dictionary in new order
         freaky_style = dict(interleaved)
