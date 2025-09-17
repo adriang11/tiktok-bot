@@ -558,7 +558,7 @@ async def test_birthday(interaction: discord.Interaction, user: discord.User = N
         print(f'[DEBUG TRACE] midpoint is ', mid, '\n')
         
         # If odd move midpoint over by 1
-        if mid % 2:
+        if len(items) % 2:
             print(f'[DEBUG TRACE] list is odd: ', mid, '\n')
             mid+=1
 
