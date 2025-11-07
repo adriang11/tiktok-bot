@@ -703,6 +703,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             for words in maturecontent:
                 if words.text == 'Log in to TikTok':
                     print(f'[DEBUG TRACE] Mature content detected\n')
+                    if isinstance(ctx, discord.Interaction): await interaction.followup.send(link)
                     await client.generic_message(interaction, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=True)
                     return
         except:
@@ -732,6 +733,10 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
         desc = meta.get_attribute("content")
         
         print(f'[DEBUG TRACE] Found description\n')
+
+        if len(desc)>2000:
+            desc = desc[:1950] + "..."
+            print(f'[DEBUG TRACE] Description shrunk\n')
 
         header=None
 
