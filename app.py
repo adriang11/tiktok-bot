@@ -530,6 +530,90 @@ async def poll(interaction: discord.Interaction, message: str, choice1: str, cho
     for i in correctsize:
         await sent.add_reaction(emojis[i])
 
+@client.tree.command(name="test_birthday", description="Display all registered birthday(s) in the server")
+async def test_birthday(interaction: discord.Interaction, user: discord.User = None):
+    print(f'[DEBUG TRACE] test birthday called', '\n')
+
+    members = {"1":{"Name":"rachelle","Birthday":"1/3"},
+               "2":{"Name":"ruth","Birthday":"1/18"},
+               "3":{"Name":"nik","Birthday":"4/24"},
+               "4":{"Name":"josh","Birthday":"7/18"},
+               "5":{"Name":"jasper","Birthday":"7/19"},
+               "6":{"Name":"adrian","Birthday":"11/19"},
+               "7":{"Name":"hari","Birthday":"11/22"},
+               "8":{"Name":"sadiya","Birthday":"11/22"},
+               "9":{"Name":"Fermi","Birthday":"12/6"},
+               "10":{"Name":"Neha","Birthday":"12/19"}
+               }
+
+    if user is None:
+        date_format = "%m/%d"
+        
+        sorted_birthdays = members
+
+        items = list(members.items())
+
+        mid = len(items) // 2
+
+        print(f'[DEBUG TRACE] midpoint is ', mid, '\n')
+        
+        # If odd move midpoint over by 1
+        if len(items) % 2:
+            mid+=1
+            print(f'[DEBUG TRACE] list is odd: ', mid, '\n')
+
+        first_half = items[:mid]
+        second_half = items[mid:]
+
+        interleaved = []
+        for a, b in zip(first_half, second_half):
+            interleaved.extend([a, b])
+
+        # If odd length, add the leftover from second_half
+        if len(first_half) > len(second_half):
+            interleaved.append(first_half[-1])
+
+        # Rebuild dictionary in new order
+        freaky_style = dict(interleaved)
+
+        columns = 0
+        newline=False
+
+        embed = discord.Embed(title=f"Degen Birthdays - {len(sorted_birthdays)} (Please memorize the entire list)", color=discord.Color.blue())
+        for member_id, member_data in freaky_style.items():
+            if newline: 
+                embed.add_field(name='\t',value='\t')
+                newline=False
+
+            name = member_data["Name"]
+            birthday = member_data["Birthday"]
+            embed.add_field(name=name, value=birthday, inline=True)
+            columns+=1
+
+            if columns==2:
+                columns=0
+                newline=True
+        
+        embed.add_field(name='\t',value='\t')
+
+
+        await interaction.response.send_message(embed=embed)
+        
+    else:
+        user_id = str(user.id)
+        if user_id in members:
+            birthday = members[user_id]["Birthday"]
+            color = members[user_id]["Color"]
+            pfp = user.display_avatar
+            embed = discord.Embed(title=f"{user.display_name}'s Birthday", color=discord.Color.from_str(color))
+            embed.description = f"{birthday}"
+            embed.set_thumbnail(url=pfp)
+            await interaction.response.send_message(embed=embed)
+        else:
+            await interaction.response.send_message("This user has not registered!", ephemeral=True)
+            return
+
+
 @client.tree.command(name = "sugma", description = "Send tiktok without description")
 async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
     await interaction.response.defer()
@@ -619,6 +703,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             for words in maturecontent:
                 if words.text == 'Log in to TikTok':
                     print(f'[DEBUG TRACE] Mature content detected\n')
+                    if isinstance(ctx, discord.Interaction): await interaction.followup.send(link)
                     await client.generic_message(interaction, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=True)
                     return
         except:
@@ -648,6 +733,10 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
         desc = meta.get_attribute("content")
         
         print(f'[DEBUG TRACE] Found description\n')
+
+        if len(desc)>2000:
+            desc = desc[:1950] + "..."
+            print(f'[DEBUG TRACE] Description shrunk\n')
 
         header=None
 
