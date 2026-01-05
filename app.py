@@ -217,7 +217,7 @@ class MyClient(discord.Client):
                 if words.text == 'Log in to TikTok':
                     print(f'[DEBUG TRACE] Mature content detected\n')
                     if isinstance(ctx, discord.Interaction): await ctx.followup.send(link)
-                    await self.generic_message(ctx, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=True)
+                    await self.generic_message(ctx, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=False)
                     return
         except:
             pass
@@ -330,7 +330,7 @@ class MyClient(discord.Client):
                 else:
                     print(r.status_code, '\n')
                     content='Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'
-                    await self.generic_message(content, ephemeral=True)
+                    await self.generic_message(ctx, content=content, ephemeral=True)
     
     async def process_slideshow(self, driver, ctx, headers, spoilerwarning, *, userinput=None):
                 print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
@@ -735,7 +735,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
         print(f'[DEBUG TRACE] Found description\n')
 
         if len(desc)>2000:
-            desc = desc[:1950] + "..."
+            desc = desc[:1900] + "..."
             print(f'[DEBUG TRACE] Description shrunk\n')
 
         header=None
@@ -747,7 +747,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
         except:
             pass
 
-        fulldesc = username + ': ' + desc
+        fulldesc = '*' + username + ':* ' + desc
 
         if link == client.lastlink:
             print(f'[DEBUG TRACE] last link matched: {link}\n')
@@ -799,7 +799,187 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             else:
                 print(r.status_code, '\n')
                 content='Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'
-                await client.generic_message(content, ephemeral=True)
+                await client.generic_message(interaction, content=content, ephemeral=True)
+    except Exception as e:
+        await client.handle_error(e, interaction, link=link)
+    finally:
+        driver.quit()
+
+@client.tree.command(name = "candice", description = "for dev testing: sends 3 CDN url links shortened")
+async def candice(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
+    await interaction.response.defer()
+
+    spoilerwarning = spoilered == "true"
+
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless=new')
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument("--disable-gpu")
+    options.add_argument('--no-sandbox')
+    options.add_argument(f"user-agent={headers}")
+
+    driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+
+    try:
+        print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+        
+        print(f'[DEBUG TRACE] message detected: {link}\n')
+
+        lst = link.split(' ')
+        for word in lst:
+            if '.tiktok.com/' in word:
+                if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
+                link = word.strip('||')
+
+        print(f'[DEBUG TRACE] extracted link: {link}\n')
+        
+        driver.get(link)
+
+        # Run Prechecks
+        try:
+            maturecontent = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'p')))
+            for words in maturecontent:
+                if words.text == 'Log in to TikTok':
+                    print(f'[DEBUG TRACE] Mature content detected\n')
+                    if isinstance(ctx, discord.Interaction): await interaction.followup.send(link)
+                    await client.generic_message(interaction, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=True)
+                    return
+        except:
+            pass
+
+        print(f'[DEBUG TRACE] No mature content detected\n')
+
+        await client.breakpoint("1 - After Pre-checks:", driver, interaction)
+
+        no_free_views = ['@11adrian19','@rn.vg','@mnymchns','@po0japanchal']
+
+        user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
+        url = user.get_attribute("content")
+        lst = url.split('/')
+
+        for word in lst:
+            if word.startswith("@"):
+                username = word
+        if username in no_free_views:
+            await interaction.followup.send(link)
+            await interaction.followup.send("No free views", ephemeral=True)
+            return
+        
+        print(f'[DEBUG TRACE] Found username\n')
+        
+        meta = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:description']")))
+        desc = meta.get_attribute("content")
+        
+        print(f'[DEBUG TRACE] Found description\n')
+
+        if len(desc)>2000:
+            desc = desc[:1900] + "..."
+            print(f'[DEBUG TRACE] Description shrunk\n')
+
+        header=None
+
+        try:
+            header = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.TAG_NAME, "h1"))).text
+            header = '**' + header + '**'
+            print(f'[DEBUG TRACE] Found header\n')
+        except:
+            pass
+
+        fulldesc = '*' + username + ':* ' + desc
+
+        if link == client.lastlink:
+            print(f'[DEBUG TRACE] last link matched: {link}\n')
+            await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
+            if header: await interaction.channel.send(header)
+            await interaction.channel.send(fulldesc)
+            return
+
+        try:
+            print('[DEBUG TRACE] Searching for video\n')
+            
+            await client.breakpoint("3 - After Photos Check (No Slideshow Detected):", driver, interaction)
+
+            element = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+        
+            print('[DEBUG TRACE] element found\n')
+
+            await client.breakpoint("4 - Video element detected:", driver, interaction)
+            
+            s = driver.page_source
+            soup = BeautifulSoup(s, "html.parser")
+            script_tag = soup.find("script", id="__UNIVERSAL_DATA_FOR_REHYDRATION__")
+            if script_tag:
+                data = json.loads(script_tag.string)
+                print('[DEBUG TRACE] script found\n')
+
+                play_url1 = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 2], data)
+                play_url2 = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 1], data)
+                play_url3 = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 0], data)
+
+                print("[DEBUG TRACE] CDN URL1:", play_url1, "\n")
+                print("[DEBUG TRACE] CDN URL2:", play_url2, "\n")
+                print("[DEBUG TRACE] CDN URL3:", play_url3, "\n")
+
+                url1 = play_url1
+                url2 = play_url2
+                url3 = play_url3
+        
+        except TimeoutException as e:
+            await self.breakpoint("5 - After video check:", driver, ctx)
+
+            print('[DEBUG TRACE] TimeoutException caught, Testing for slideshow: ', e, '\n')
+
+            photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
+
+            if photoscheck:  
+                print('[DEBUG TRACE] Photos found\n')
+                return
+
+        for url in [url1,url2,url3]:
+            if url is None:
+                await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
+                if header: await interaction.channel.send(header)
+                await interaction.channel.send(fulldesc)
+            else:
+
+                all_cookies = driver.get_cookies()
+                cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
+
+                r = requests.get(url, cookies=cookies, headers=headers)
+                
+                if os.path.exists('output.mp4'):
+                    os.remove('output.mp4')
+                    print('[DEBUG TRACE] file removed\n')
+
+                if r.status_code == 200:
+                    with open('output.mp4', 'wb') as f:
+                        f.write(r.content)
+                    print('[DEBUG TRACE] video downloaded\n')
+
+                    # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
+                    os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
+                    log_file = open("log.txt","r")
+                    log_file_content = log_file.read()
+                    print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+
+                    try:
+                        await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
+                        if header: await interaction.channel.send(header)
+                        await interaction.channel.send(fulldesc)
+                        print('[DEBUG TRACE] file sent\n')
+                        client.lastlink = link
+                    except discord.HTTPException as e:
+                        if e.code == 40005:
+                            await client.handle_large_upload(interaction, url)
+                            if header: await interaction.channel.send(header)
+                            await interaction.channel.send(fulldesc)
+                        else:
+                            raise
+                else:
+                    print(r.status_code, '\n')
+                    content='Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'
+                    await client.generic_message(interaction, content=content, ephemeral=True)
     except Exception as e:
         await client.handle_error(e, interaction, link=link)
     finally:
