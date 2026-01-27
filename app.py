@@ -166,6 +166,12 @@ class MyClient(discord.Client):
             elif isinstance(ctx, discord.Interaction):
                 await ctx.followup.send(link)
                 return await ctx.followup.send('File exceeds the size limit allowed on Discord. But just for you, imma send the link anyway so you can watch it on the Discord embed :D Also tell sharia that his bot needs to NOT respond to links sent by another bot', ephemeral=True)
+        elif isinstance(e, int):
+            print('[DEBUG TRACE] Status Code Error Caught: ' + str(e) + ' (its over, they\'re onto us)')
+            if e == 429:
+                await send_response('Rate Limited (They\'re onto us) Please try again in a moment')
+            else:
+                await send_response('Status Code Error: ' + str(e) + ' Please ping Adrian')
         else:
             print('oopsies\n')
             traceback.print_exc()
@@ -329,8 +335,7 @@ class MyClient(discord.Client):
                             raise
                 else:
                     print(r.status_code, '\n')
-                    content='Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'
-                    await self.generic_message(ctx, content=content, ephemeral=True)
+                    await self.handle_error(r.status_code, ctx, link=link)
     
     async def process_slideshow(self, driver, ctx, headers, spoilerwarning, *, userinput=None):
                 print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
@@ -798,8 +803,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                         raise
             else:
                 print(r.status_code, '\n')
-                content='Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'
-                await client.generic_message(interaction, content=content, ephemeral=True)
+                await self.handle_error(r.status_code, ctx, link=link)
     except Exception as e:
         await client.handle_error(e, interaction, link=link)
     finally:
@@ -978,8 +982,7 @@ async def candice(interaction: discord.Interaction, link: str, spoilered: Litera
                             raise
                 else:
                     print(r.status_code, '\n')
-                    content='Status Code Error: ' + str(r.status_code) + ' (its over, they\'re onto us)'
-                    await client.generic_message(interaction, content=content, ephemeral=True)
+                    await self.handle_error(r.status_code, ctx, link=link)
     except Exception as e:
         await client.handle_error(e, interaction, link=link)
     finally:
