@@ -116,14 +116,17 @@ class MyClient(discord.Client):
             driver.get_screenshot_as_file("screenshot.png")
             await message.reply(f"{content}", file=discord.File('screenshot.png'))
 
-    async def handle_large_upload(self, ctx, cdn_url):
+    async def handle_large_upload(self, ctx, cdn_url, spoilerwarning=False):
+        client.lastlink = "" # Do not store video if large file
         s = gdshortener.ISGDShortener()
         short = s.shorten(cdn_url)
 
         if isinstance(ctx, discord.Message):
-            await ctx.reply(short[0])
+            if spoilerwarning: await ctx.reply('||' + short[0] + '||') 
+            else: await ctx.reply(short[0])
         elif isinstance(ctx, discord.Interaction):
-            await ctx.followup.send(short[0])
+            if spoilerwarning: await ctx.followup.send('||' + short[0] + '||') 
+            else: await ctx.followup.send(short[0])
 
     async def handle_error(self, e, ctx, *, link="", retry=0):
         async def send_response(content, *, mention_author=True, delete_after=30):
@@ -165,7 +168,7 @@ class MyClient(discord.Client):
                 return await ctx.reply('enough.', mention_author=True, delete_after=30)
             elif isinstance(ctx, discord.Interaction):
                 await ctx.followup.send(link)
-                return await ctx.followup.send('File exceeds the size limit allowed on Discord. But just for you, imma send the link anyway so you can watch it on the Discord embed :D Also tell sharia that his bot needs to NOT respond to links sent by another bot', ephemeral=True)
+                return await ctx.followup.send(':P', ephemeral=True)
         elif isinstance(e, int):
             print('[DEBUG TRACE] Status Code Error Caught: ' + str(e) + ' (its over, they\'re onto us)')
             if e == 429:
@@ -190,7 +193,6 @@ class MyClient(discord.Client):
         elif isinstance(ctx, discord.Interaction):
             await ctx.followup.send('<' + link + '>')
             await ctx.channel.send(file=discord.File('output.mp4', spoiler=spoilerwarning))
-
 
     async def run_prechecks(self, driver, ctx, spoilerwarning, *, userinput=None, override=False):
         # strip link from message if appicable
@@ -258,7 +260,7 @@ class MyClient(discord.Client):
         try:
             print('[DEBUG TRACE] Searching for video\n')
             
-            await self.breakpoint("3 - After Photos Check (No Slideshow Detected):", driver, ctx)
+            await self.breakpoint("3 - Checking for Video:", driver, ctx)
 
             element = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
         
@@ -282,7 +284,7 @@ class MyClient(discord.Client):
             return url
         
         except TimeoutException as e:
-            await self.breakpoint("5 - After video check:", driver, ctx)
+            await self.breakpoint("4 - No video detected:", driver, ctx)
 
             print('[DEBUG TRACE] TimeoutException caught, Testing for slideshow: ', e, '\n')
 
@@ -330,7 +332,7 @@ class MyClient(discord.Client):
                         self.lastlink = link
                     except discord.HTTPException as e:
                         if e.code == 40005:
-                            await self.handle_large_upload(ctx, url)
+                            await self.handle_large_upload(ctx, url, spoilerwarning=spoilerwarning)
                         else:
                             raise
                 else:
@@ -340,14 +342,14 @@ class MyClient(discord.Client):
     async def process_slideshow(self, driver, ctx, headers, spoilerwarning, *, userinput=None):
                 print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
                 
-                await self.breakpoint("6 - slideshow 1:", driver, ctx)
+                await self.breakpoint("5 - slideshow 1:", driver, ctx)
 
                 wrapper = WebDriverWait(driver, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
                 print(f'[DEBUG TRACE] wrapper found\n')
                 divs = WebDriverWait(wrapper, 10, 0.5, (StaleElementReferenceException)).until(lambda x: x.find_elements(By.TAG_NAME, 'div'))
                 print(f'[DEBUG TRACE] div found\n')
                 
-                await self.breakpoint("7 - slideshow 2:", driver, ctx)
+                await self.breakpoint("6 - slideshow 2:", driver, ctx)
 
                 files = []
                 found = []
@@ -708,7 +710,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             for words in maturecontent:
                 if words.text == 'Log in to TikTok':
                     print(f'[DEBUG TRACE] Mature content detected\n')
-                    if isinstance(ctx, discord.Interaction): await interaction.followup.send(link)
+                    await interaction.followup.send(link)
                     await client.generic_message(interaction, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=True)
                     return
         except:
@@ -796,14 +798,14 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                     client.lastlink = link
                 except discord.HTTPException as e:
                     if e.code == 40005:
-                        await client.handle_large_upload(interaction, url)
+                        await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
                         if header: await interaction.channel.send(header)
                         await interaction.channel.send(fulldesc)
                     else:
                         raise
             else:
                 print(r.status_code, '\n')
-                await self.handle_error(r.status_code, ctx, link=link)
+                await client.handle_error(r.status_code, interaction, link=link)
     except Exception as e:
         await client.handle_error(e, interaction, link=link)
     finally:
@@ -930,7 +932,7 @@ async def candice(interaction: discord.Interaction, link: str, spoilered: Litera
                 url3 = play_url3
         
         except TimeoutException as e:
-            await self.breakpoint("5 - After video check:", driver, ctx)
+            await client.breakpoint("5 - After video check:", driver, interaction)
 
             print('[DEBUG TRACE] TimeoutException caught, Testing for slideshow: ', e, '\n')
 
@@ -975,18 +977,347 @@ async def candice(interaction: discord.Interaction, link: str, spoilered: Litera
                         client.lastlink = link
                     except discord.HTTPException as e:
                         if e.code == 40005:
-                            await client.handle_large_upload(interaction, url)
+                            await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
                             if header: await interaction.channel.send(header)
                             await interaction.channel.send(fulldesc)
                         else:
                             raise
                 else:
                     print(r.status_code, '\n')
-                    await self.handle_error(r.status_code, ctx, link=link)
+                    await client.handle_error(r.status_code, interaction, link=link)
     except Exception as e:
         await client.handle_error(e, interaction, link=link)
     finally:
         driver.quit()
+
+@client.tree.command(name = "withaudio", description = "Send tiktok with audio")
+async def with_audio(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
+    await interaction.response.defer()
+    
+    spoilerwarning = spoilered == "true"
+
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless=new')
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument("--disable-gpu")
+    options.add_argument('--no-sandbox')
+    options.add_argument(f"user-agent={headers}")
+
+    driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+
+    try:
+        print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+        
+        print(f'[DEBUG TRACE] message detected: {link}\n')
+
+        lst = link.split(' ')
+        for word in lst:
+            if '.tiktok.com/' in word:
+                if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
+                link = word.strip('||')
+
+        print(f'[DEBUG TRACE] extracted link: {link}\n')
+        
+        driver.get(link)
+
+        # Run Prechecks
+        try:
+            maturecontent = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'p')))
+            for words in maturecontent:
+                if words.text == 'Log in to TikTok':
+                    print(f'[DEBUG TRACE] Mature content detected\n')
+                    await interaction.followup.send(link)
+                    await client.generic_message(interaction, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=True)
+                    return
+        except:
+            pass
+
+        print(f'[DEBUG TRACE] No mature content detected\n')
+
+        await client.breakpoint("1 - After Pre-checks:", driver, interaction)
+
+        no_free_views = ['@11adrian19','@rn.vg','@mnymchns','@po0japanchal']
+
+        user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
+
+        url = user.get_attribute("content")
+        lst = url.split('/')
+
+        for word in lst:
+            if word.startswith("@"):
+                username = word
+        if username in no_free_views:
+            await interaction.followup.send(link)
+            await interaction.followup.send("No free views", ephemeral=True)
+            return
+        
+        print(f'[DEBUG TRACE] Found username\n')
+
+        music=None
+
+        url = await client.find_video(driver, interaction)
+
+        all_cookies = driver.get_cookies()
+        cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
+
+        if url is None:
+            await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
+
+        else:
+            r = requests.get(url, cookies=cookies, headers=headers)
+            
+            if os.path.exists('output.mp4'):
+                os.remove('output.mp4')
+                print('[DEBUG TRACE] file removed\n')
+
+            if r.status_code == 200:
+                with open('output.mp4', 'wb') as f:
+                    f.write(r.content)
+                print('[DEBUG TRACE] video downloaded\n')
+
+                # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
+                os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
+                log_file = open("log.txt","r")
+                log_file_content = log_file.read()
+                print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+
+                try:
+                    await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
+                    print('[DEBUG TRACE] file sent\n')
+                    client.lastlink = link
+                except discord.HTTPException as e:
+                    if e.code == 40005:
+                        await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                    else:
+                        raise
+            else:
+                print(r.status_code, '\n')
+                await client.handle_error(r.status_code, interaction, link=link)
+
+        try:
+            print(f'[DEBUG TRACE] check audio method 1 (chosen sound)\n')
+            newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[data-e2e="video-music"]'))).get_attribute('href')
+            print(f'[DEBUG TRACE] found video music disc\n')
+            driver.get(newlink)
+            print(f'[DEBUG TRACE] navigated to site\n')
+            music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
+            print(f'[DEBUG TRACE] got music\n')
+        except:
+            try:
+                print(f'[DEBUG TRACE] check audio method 2 (original sound)\n')
+                newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="original sound"]'))).get_attribute('href')
+                print(f'[DEBUG TRACE] found video music disc\n')
+                driver.get(newlink)
+                print(f'[DEBUG TRACE] navigated to site\n')
+                music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
+                print(f'[DEBUG TRACE] got music\n') 
+            except:
+                print(f'[DEBUG TRACE] failed to get music\n')
+                await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
+        if music: 
+            s = requests.get(music, cookies=cookies, headers=headers)
+
+            if os.path.exists('audio.wav'):
+                os.remove('audio.wav')
+                print('[DEBUG TRACE] audio file removed\n')
+
+            if s.status_code == 200:
+                with open('audio.wav', 'wb') as f:
+                    f.write(s.content)
+                print('[DEBUG TRACE] audio downloaded\n')
+
+                await interaction.channel.send(file=discord.File('audio.wav'))
+
+                print('[DEBUG TRACE] audio file sent\n')
+
+            else:
+                print(s.status_code, '\n')
+                await client.handle_error(s.status_code, interaction, link=link)
+
+    except Exception as e:
+        await client.handle_error(e, interaction, link=link)
+    finally:
+        driver.quit()
+
+@client.tree.command(name = "meow", description = "Send tiktok with description and audio")
+async def meow(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
+    await interaction.response.defer()
+    
+    spoilerwarning = spoilered == "true"
+
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless=new')
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument("--disable-gpu")
+    options.add_argument('--no-sandbox')
+    options.add_argument(f"user-agent={headers}")
+
+    driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+
+    try:
+        print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+        
+        print(f'[DEBUG TRACE] message detected: {link}\n')
+
+        lst = link.split(' ')
+        for word in lst:
+            if '.tiktok.com/' in word:
+                if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
+                link = word.strip('||')
+
+        print(f'[DEBUG TRACE] extracted link: {link}\n')
+        
+        driver.get(link)
+
+        # Run Prechecks
+        try:
+            maturecontent = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'p')))
+            for words in maturecontent:
+                if words.text == 'Log in to TikTok':
+                    print(f'[DEBUG TRACE] Mature content detected\n')
+                    await interaction.followup.send(link)
+                    await client.generic_message(interaction, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=True)
+                    return
+        except:
+            pass
+
+        print(f'[DEBUG TRACE] No mature content detected\n')
+
+        await client.breakpoint("1 - After Pre-checks:", driver, interaction)
+
+        no_free_views = ['@11adrian19','@rn.vg','@mnymchns','@po0japanchal']
+
+        user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
+
+        url = user.get_attribute("content")
+        lst = url.split('/')
+
+        for word in lst:
+            if word.startswith("@"):
+                username = word
+        if username in no_free_views:
+            await interaction.followup.send(link)
+            await interaction.followup.send("No free views", ephemeral=True)
+            return
+        
+        print(f'[DEBUG TRACE] Found username\n')
+        
+        meta = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:description']")))
+        desc = meta.get_attribute("content")
+        
+        print(f'[DEBUG TRACE] Found description\n')
+
+        if len(desc)>2000:
+            desc = desc[:1900] + "..."
+            print(f'[DEBUG TRACE] Description shrunk\n')
+
+        header=None
+
+        try:
+           header = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.TAG_NAME, "h1"))).text
+           header = '**' + header + '**'
+           print(f'[DEBUG TRACE] Found header\n')
+        except:
+            pass
+
+        fulldesc = '*' + username + ':* ' + desc
+
+        music=None
+
+        url = await client.find_video(driver, interaction)
+
+        all_cookies = driver.get_cookies()
+        cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
+
+        if url is None:
+            await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
+
+        else:
+            r = requests.get(url, cookies=cookies, headers=headers)
+            
+            if os.path.exists('output.mp4'):
+                os.remove('output.mp4')
+                print('[DEBUG TRACE] file removed\n')
+
+            if r.status_code == 200:
+                with open('output.mp4', 'wb') as f:
+                    f.write(r.content)
+                print('[DEBUG TRACE] video downloaded\n')
+
+                # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
+                os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
+                log_file = open("log.txt","r")
+                log_file_content = log_file.read()
+                print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+
+                try:
+                    await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
+                    if header: await interaction.channel.send(header)
+                    await interaction.channel.send(fulldesc)
+                    print('[DEBUG TRACE] file sent\n')
+                    client.lastlink = link
+                except discord.HTTPException as e:
+                    if e.code == 40005:
+                        await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                        if header: await interaction.channel.send(header)
+                        await interaction.channel.send(fulldesc)
+                    else:
+                        raise
+            else:
+                print(r.status_code, '\n')
+                await client.handle_error(r.status_code, interaction, link=link)
+
+        try:
+            print(f'[DEBUG TRACE] check audio method 1 (chosen sound)\n')
+            newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[data-e2e="video-music"]'))).get_attribute('href')
+            print(f'[DEBUG TRACE] found video music disc\n')
+            driver.get(newlink)
+            print(f'[DEBUG TRACE] navigated to site\n')
+            music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
+            print(f'[DEBUG TRACE] got music\n')
+        except:
+            try:
+                print(f'[DEBUG TRACE] check audio method 2 (original sound)\n')
+                newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="original sound"]'))).get_attribute('href')
+                print(f'[DEBUG TRACE] found video music disc\n')
+                driver.get(newlink)
+                print(f'[DEBUG TRACE] navigated to site\n')
+                music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
+                print(f'[DEBUG TRACE] got music\n') 
+            except:
+                print(f'[DEBUG TRACE] failed to get music\n')
+                await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
+        if music: 
+            s = requests.get(music, cookies=cookies, headers=headers)
+
+            if os.path.exists('audio.wav'):
+                os.remove('audio.wav')
+                print('[DEBUG TRACE] audio file removed\n')
+
+            if s.status_code == 200:
+                with open('audio.wav', 'wb') as f:
+                    f.write(s.content)
+                print('[DEBUG TRACE] audio downloaded\n')
+
+                await interaction.channel.send(file=discord.File('audio.wav'))
+
+                print('[DEBUG TRACE] audio file sent\n')
+
+            else:
+                print(s.status_code, '\n')
+                await client.handle_error(s.status_code, interaction, link=link)
+
+    except Exception as e:
+        await client.handle_error(e, interaction, link=link)
+    finally:
+        driver.quit()
+
+@client.tree.command(name = "goodluck", description = "Says 'Good Luck' to you. Nothing else") 
+async def good_luck(interaction: discord.Interaction):
+    await interaction.response.send_message("Watch how I do this.",ephemeral=True)
+    await interaction.channel.send(f"Good Luck! {interaction.user.mention}")
 
 client.run(TOKEN)
 
