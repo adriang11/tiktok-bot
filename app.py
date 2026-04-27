@@ -11,6 +11,7 @@ import random
 import requests
 from bs4 import BeautifulSoup
 from discord import app_commands
+from discord import Member
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver import ActionChains
@@ -140,11 +141,8 @@ class MyClient(discord.Client):
         if isinstance(e, OSError):
             if str(e).startswith('No connection adapters were found for'):
                 print('[DEBUG TRACE] Blob link detected: ', e, '\n')
-                if retry < 5:
-                    return retry
-                else:
-                    if isinstance(ctx, discord.Interaction):
-                        return await ctx.followup.send('If at first you don\'t succeed, try and try again', ephemeral=True) 
+                if isinstance(ctx, discord.Interaction):
+                    return await ctx.followup.send('If at first you don\'t succeed, try and try again', ephemeral=True) 
             else:
                 print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
                 await send_response('Bot is working on another thing. Count to 10 and try again.')
@@ -494,16 +492,10 @@ async def debug(interaction: discord.Interaction):
     response = "Debug Mode set to " + str(tog)
     await interaction.response.send_message(response)
 
-@client.tree.command(name = "addwisdom", description = "Add wisdom like a boss") 
-async def add_wisdom(interaction: discord.Interaction, message: str):
-    if interaction.user.id != 474713843181027328:
-        await interaction.response.send_message("You are not Adrian.", ephemeral=True)
-        return
-    
-    with open("wisdomadrian.txt", 'a', encoding='utf-8') as file:
-        file.write(message + '\n')
-    
-    await interaction.response.send_message(("Added new wisdom: " + message), ephemeral=True)
+@client.tree.command(name = "clearlast", description = "Clear the last saved tiktok link") 
+async def clear_last(interaction: discord.Interaction):
+    client.lastlink = ""
+    await interaction.response.send_message("Last link cleared",ephemeral=True)
 
 @client.tree.command(name = "poll", description = "Creates a poll") 
 async def poll(interaction: discord.Interaction, message: str, choice1: str, choice2: str, choice3: Optional[str], choice4: Optional[str], choice5: Optional[str], choice6: Optional[str], choice7: Optional[str], choice8: Optional[str], choice9: Optional[str], choice10: Optional[str]):
@@ -1096,44 +1088,42 @@ async def with_audio(interaction: discord.Interaction, link: str, spoilered: Lit
                 await client.handle_error(r.status_code, interaction, link=link)
 
         try:
-            print(f'[DEBUG TRACE] check audio method 1 (chosen sound)\n')
-            newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[data-e2e="video-music"]'))).get_attribute('href')
+            print(f'[DEBUG TRACE] checking for audio\n')
+            newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="Watch more videos with music"]'))).get_attribute('href')
             print(f'[DEBUG TRACE] found video music disc\n')
             driver.get(newlink)
             print(f'[DEBUG TRACE] navigated to site\n')
             music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
-            print(f'[DEBUG TRACE] got music\n')
+            print(f'[DEBUG TRACE] got music\n') 
         except:
-            try:
-                print(f'[DEBUG TRACE] check audio method 2 (original sound)\n')
-                newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="original sound"]'))).get_attribute('href')
-                print(f'[DEBUG TRACE] found video music disc\n')
-                driver.get(newlink)
-                print(f'[DEBUG TRACE] navigated to site\n')
-                music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
-                print(f'[DEBUG TRACE] got music\n') 
-            except:
-                print(f'[DEBUG TRACE] failed to get music\n')
-                await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
+            print(f'[DEBUG TRACE] failed to get music\n')
+            await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
         if music: 
-            s = requests.get(music, cookies=cookies, headers=headers)
+            try:
+                s = requests.get(music, cookies=cookies, headers=headers)
 
-            if os.path.exists('audio.wav'):
-                os.remove('audio.wav')
-                print('[DEBUG TRACE] audio file removed\n')
+                if os.path.exists('audio.wav'):
+                    os.remove('audio.wav')
+                    print('[DEBUG TRACE] audio file removed\n')
 
-            if s.status_code == 200:
-                with open('audio.wav', 'wb') as f:
-                    f.write(s.content)
-                print('[DEBUG TRACE] audio downloaded\n')
+                if s.status_code == 200:
+                    with open('audio.wav', 'wb') as f:
+                        f.write(s.content)
+                    print('[DEBUG TRACE] audio downloaded\n')
 
-                await interaction.channel.send(file=discord.File('audio.wav'))
+                    await interaction.channel.send(file=discord.File('audio.wav'))
 
-                print('[DEBUG TRACE] audio file sent\n')
+                    print('[DEBUG TRACE] audio file sent\n')
 
-            else:
-                print(s.status_code, '\n')
-                await client.handle_error(s.status_code, interaction, link=link)
+                else:
+                    print(s.status_code, '\n')
+                    await client.handle_error(s.status_code, interaction, link=link)
+            except OSError as e:
+                if str(e).startswith('No connection adapters were found for'):
+                    print(f'[DEBUG TRACE] Blob link detected:  No connection adapters were found for {music}\n')
+                    await client.generic_message(interaction, "Failed to get audio... (inaccessable file location)", ephemeral=True)
+                else:
+                    raise
 
     except Exception as e:
         await client.handle_error(e, interaction, link=link)
@@ -1233,6 +1223,8 @@ async def meow(interaction: discord.Interaction, link: str, spoilered: Literal["
 
         if url is None:
             await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
+            if header: await interaction.channel.send(header)
+            await interaction.channel.send(fulldesc)
 
         else:
             r = requests.get(url, cookies=cookies, headers=headers)
@@ -1270,54 +1262,54 @@ async def meow(interaction: discord.Interaction, link: str, spoilered: Literal["
                 await client.handle_error(r.status_code, interaction, link=link)
 
         try:
-            print(f'[DEBUG TRACE] check audio method 1 (chosen sound)\n')
-            newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[data-e2e="video-music"]'))).get_attribute('href')
+            print(f'[DEBUG TRACE] checking for audio\n')
+            newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="Watch more videos with music"]'))).get_attribute('href')
             print(f'[DEBUG TRACE] found video music disc\n')
             driver.get(newlink)
             print(f'[DEBUG TRACE] navigated to site\n')
             music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
-            print(f'[DEBUG TRACE] got music\n')
+            print(f'[DEBUG TRACE] got music\n') 
         except:
-            try:
-                print(f'[DEBUG TRACE] check audio method 2 (original sound)\n')
-                newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="original sound"]'))).get_attribute('href')
-                print(f'[DEBUG TRACE] found video music disc\n')
-                driver.get(newlink)
-                print(f'[DEBUG TRACE] navigated to site\n')
-                music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
-                print(f'[DEBUG TRACE] got music\n') 
-            except:
-                print(f'[DEBUG TRACE] failed to get music\n')
-                await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
+            print(f'[DEBUG TRACE] failed to get music\n')
+            await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
         if music: 
-            s = requests.get(music, cookies=cookies, headers=headers)
+            try:
+                s = requests.get(music, cookies=cookies, headers=headers)
 
-            if os.path.exists('audio.wav'):
-                os.remove('audio.wav')
-                print('[DEBUG TRACE] audio file removed\n')
+                if os.path.exists('audio.wav'):
+                    os.remove('audio.wav')
+                    print('[DEBUG TRACE] audio file removed\n')
 
-            if s.status_code == 200:
-                with open('audio.wav', 'wb') as f:
-                    f.write(s.content)
-                print('[DEBUG TRACE] audio downloaded\n')
+                if s.status_code == 200:
+                    with open('audio.wav', 'wb') as f:
+                        f.write(s.content)
+                    print('[DEBUG TRACE] audio downloaded\n')
 
-                await interaction.channel.send(file=discord.File('audio.wav'))
+                    await interaction.channel.send(file=discord.File('audio.wav'))
 
-                print('[DEBUG TRACE] audio file sent\n')
+                    print('[DEBUG TRACE] audio file sent\n')
 
-            else:
-                print(s.status_code, '\n')
-                await client.handle_error(s.status_code, interaction, link=link)
-
+                else:
+                    print(s.status_code, '\n')
+                    await client.handle_error(s.status_code, interaction, link=link)
+            except OSError as e:
+                if str(e).startswith('No connection adapters were found for'):
+                    print(f'[DEBUG TRACE] Blob link detected:  No connection adapters were found for {music}\n')
+                    await client.generic_message(interaction, "Failed to get audio... (inaccessable file location)", ephemeral=True)
+                else:
+                    raise
     except Exception as e:
         await client.handle_error(e, interaction, link=link)
     finally:
         driver.quit()
 
 @client.tree.command(name = "goodluck", description = "Says 'Good Luck' to you. Nothing else") 
-async def good_luck(interaction: discord.Interaction):
+async def good_luck(interaction: discord.Interaction, user: Optional[Member] = None):
     await interaction.response.send_message("Watch how I do this.",ephemeral=True)
-    await interaction.channel.send(f"Good Luck! {interaction.user.mention}")
+    if user:
+        await interaction.channel.send(f"Good Luck! {user.mention}")
+    else:
+        await interaction.channel.send(f"Good Luck! {interaction.user.mention}")
 
 client.run(TOKEN)
 
