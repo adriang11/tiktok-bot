@@ -1,5 +1,6 @@
 .env
 output.mp4
+audio.wav
 Download.mp4
 log.txt
 node_modules/
