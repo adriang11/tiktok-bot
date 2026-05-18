@@ -109,7 +109,7 @@ class MyClient(discord.Client):
                 self.debugmode = False
             return self.debugmode
 
-    async def log(self, content, driver, ctx):
+    async def log(self, content, ctx):
         print(content)
         
         if self.debugmode: 
@@ -128,7 +128,7 @@ class MyClient(discord.Client):
 
             final_url = short[0] if short else cdn_url
         except Exception as e:
-            self.log(f"[DEBUG TRACE] URL shortening failed: {e}\n")
+            await self.log(f"[DEBUG TRACE] URL shortening failed: {e}\n", ctx)
             final_url = cdn_url
         
         if spoilerwarning: final_url= f"||{final_url}||"
@@ -243,7 +243,7 @@ class MyClient(discord.Client):
         except:
             pass
 
-        self.log(f'[DEBUG TRACE] No mature content detected\n')
+        await self.log(f'[DEBUG TRACE] No mature content detected\n', ctx)
 
         await self.breakpoint("1 - After Pre-checks:", driver, ctx)
 
@@ -265,19 +265,19 @@ class MyClient(discord.Client):
                     await ctx.followup.send("No free views", ephemeral=True)
                 return
             
-            self.log(f'[DEBUG TRACE] View stealing protected\n')
+            self.log(f'[DEBUG TRACE] View stealing protected\n', ctx)
 
         return link
 
     async def find_video(self, driver, ctx):
         try:
-            self.log('[DEBUG TRACE] Searching for video\n')
+            self.log('[DEBUG TRACE] Searching for video\n', ctx)
             
             await self.breakpoint("3 - Checking for Video:", driver, ctx)
 
             element = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
         
-            self.log('[DEBUG TRACE] element found\n')
+            await self.log('[DEBUG TRACE] element found\n', ctx)
 
             await self.breakpoint("4 - Video element detected:", driver, ctx)
             
@@ -286,11 +286,11 @@ class MyClient(discord.Client):
             script_tag = soup.find("script", id="__UNIVERSAL_DATA_FOR_REHYDRATION__")
             if script_tag:
                 data = json.loads(script_tag.string)
-                self.log('[DEBUG TRACE] script found\n')
+                await self.log('[DEBUG TRACE] script found\n', ctx)
 
                 play_url = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 2], data)
 
-                self.log(f"[DEBUG TRACE] CDN URL: {play_url}\n")
+                await self.log(f"[DEBUG TRACE] CDN URL: {play_url}\n", ctx)
 
                 url = play_url
 
@@ -299,16 +299,16 @@ class MyClient(discord.Client):
         except TimeoutException as e:
             await self.breakpoint("4 - No video detected:", driver, ctx)
 
-            self.log('[DEBUG TRACE] TimeoutException caught, Testing for slideshow: ', e, '\n')
+            await self.log('[DEBUG TRACE] TimeoutException caught, Testing for slideshow: ', e, '\n', ctx)
 
             photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
 
             if photoscheck:  
-                self.log('[DEBUG TRACE] Photos found\n')
+                await self.log('[DEBUG TRACE] Photos found\n')
                 return
 
     async def web_scrape(self, driver, ctx, headers, spoilerwarning, *, userinput=None, override=False):
-            self.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+            await self.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n', ctx)
 
             link = await self.run_prechecks(driver, ctx, spoilerwarning, userinput=userinput, override=override)
             if link is None: return
@@ -326,22 +326,22 @@ class MyClient(discord.Client):
                 
                 if os.path.exists('output.mp4'):
                     os.remove('output.mp4')
-                    self.log('[DEBUG TRACE] file removed\n')
+                    await self.log('[DEBUG TRACE] file removed\n', ctx)
 
                 if r.status_code == 200:
                     with open('output.mp4', 'wb') as f:
                         f.write(r.content)
-                    self.log('[DEBUG TRACE] video downloaded\n')
+                    await self.log('[DEBUG TRACE] video downloaded\n', ctx)
 
                     # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
                     os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
                     log_file = open("log.txt","r")
                     log_file_content = log_file.read()
-                    self.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}')
+                    await self.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', ctx)
 
                     try:
                         await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
-                        self.log('[DEBUG TRACE] file sent\n')
+                        await self.log('[DEBUG TRACE] file sent\n', ctx)
                         self.lastlink = link
                     except discord.HTTPException as e:
                         if e.code == 40005:
@@ -349,18 +349,18 @@ class MyClient(discord.Client):
                         else:
                             raise
                 else:
-                    self.log(f'[DEBUG TRACE] Error downloading video. Status code: {r.status_code}\n')
+                    await self.log(f'[DEBUG TRACE] Error downloading video. Status code: {r.status_code}\n', ctx)
                     await self.handle_error(r.status_code, ctx, link=link)
     
     async def process_slideshow(self, driver, ctx, headers, spoilerwarning, *, userinput=None):
-                self.log(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
-                
+                await self.log(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n', ctx)
+
                 await self.breakpoint("5 - slideshow 1:", driver, ctx)
 
                 wrapper = WebDriverWait(driver, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
-                self.log(f'[DEBUG TRACE] wrapper found\n')
+                await self.log(f'[DEBUG TRACE] wrapper found\n', ctx)
                 divs = WebDriverWait(wrapper, 10, 0.5, (StaleElementReferenceException)).until(lambda x: x.find_elements(By.TAG_NAME, 'div'))
-                self.log(f'[DEBUG TRACE] div found\n')
+                await self.log(f'[DEBUG TRACE] div found\n', ctx)
                 
                 await self.breakpoint("6 - slideshow 2:", driver, ctx)
 
@@ -400,7 +400,7 @@ class MyClient(discord.Client):
                     os.remove(f'img{num}.png')
                     num+=1
                 files.clear()
-                self.log('[DEBUG TRACE] files cleared\n')
+                await self.log('[DEBUG TRACE] files cleared\n', ctx)
                 fnum = 0
                 if isinstance(ctx, discord.Interaction):
                     await ctx.followup.send('<' + userinput + '>')
