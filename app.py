@@ -109,25 +109,34 @@ class MyClient(discord.Client):
                 self.debugmode = False
             return self.debugmode
 
-    async def breakpoint(self, content, driver, message):
-        if isinstance(message, discord.Interaction):
-            return
+    async def log(self, content, driver, ctx):
+        print(content)
         
         if self.debugmode: 
+            await ctx.channel.send(content)
+
+    async def breakpoint(self, content, driver, message):
+        if self.debugmode: 
             driver.get_screenshot_as_file("screenshot.png")
-            await message.reply(f"{content}", file=discord.File('screenshot.png'))
+            await message.channel.send(f"{content}", file=discord.File('screenshot.png'))
 
     async def handle_large_upload(self, ctx, cdn_url, spoilerwarning=False):
         client.lastlink = "" # Do not store video if large file
-        s = gdshortener.ISGDShortener()
-        short = s.shorten(cdn_url)
+        try:   
+            s = gdshortener.ISGDShortener()
+            short = s.shorten(cdn_url)
+
+            final_url = short[0] if short else cdn_url
+        except Exception as e:
+            self.log(f"[DEBUG TRACE] URL shortening failed: {e}\n")
+            final_url = cdn_url
+        
+        if spoilerwarning: final_url= f"||{final_url}||"
 
         if isinstance(ctx, discord.Message):
-            if spoilerwarning: await ctx.reply('||' + short[0] + '||') 
-            else: await ctx.reply(short[0])
+            await ctx.reply(final_url)
         elif isinstance(ctx, discord.Interaction):
-            if spoilerwarning: await ctx.followup.send('||' + short[0] + '||') 
-            else: await ctx.followup.send(short[0])
+            await ctx.followup.send(final_url)
 
     async def handle_error(self, e, ctx, *, link="", retry=0):
         async def send_response(content, *, mention_author=True, delete_after=30):
@@ -148,7 +157,13 @@ class MyClient(discord.Client):
                 await send_response('Bot is working on another thing. Count to 10 and try again.')
         elif isinstance(e, InvalidArgumentException):
             print('[DEBUG TRACE] InvalidArgumentException caught: ', e.msg, '\n')
-            await send_response('Please send a valid tiktok link...')
+            if 'x.com/' in link:
+                fixuplink = link.replace('x.com', 'fixupx.com', 1)
+
+                if isinstance(ctx, discord.Interaction):
+                    return await ctx.followup.send(fixuplink, ephemeral=True)
+            else:
+                await send_response('Please send a valid tiktok link...')
         elif isinstance(e, TimeoutException):
             print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
             await send_response('Failure.')
@@ -228,7 +243,7 @@ class MyClient(discord.Client):
         except:
             pass
 
-        print(f'[DEBUG TRACE] No mature content detected\n')
+        self.log(f'[DEBUG TRACE] No mature content detected\n')
 
         await self.breakpoint("1 - After Pre-checks:", driver, ctx)
 
@@ -250,19 +265,19 @@ class MyClient(discord.Client):
                     await ctx.followup.send("No free views", ephemeral=True)
                 return
             
-            print(f'[DEBUG TRACE] View stealing protected\n')
+            self.log(f'[DEBUG TRACE] View stealing protected\n')
 
         return link
 
     async def find_video(self, driver, ctx):
         try:
-            print('[DEBUG TRACE] Searching for video\n')
+            self.log('[DEBUG TRACE] Searching for video\n')
             
             await self.breakpoint("3 - Checking for Video:", driver, ctx)
 
             element = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
         
-            print('[DEBUG TRACE] element found\n')
+            self.log('[DEBUG TRACE] element found\n')
 
             await self.breakpoint("4 - Video element detected:", driver, ctx)
             
@@ -271,11 +286,11 @@ class MyClient(discord.Client):
             script_tag = soup.find("script", id="__UNIVERSAL_DATA_FOR_REHYDRATION__")
             if script_tag:
                 data = json.loads(script_tag.string)
-                print('[DEBUG TRACE] script found\n')
+                self.log('[DEBUG TRACE] script found\n')
 
                 play_url = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 2], data)
 
-                print("[DEBUG TRACE] CDN URL:", play_url, "\n")
+                self.log(f"[DEBUG TRACE] CDN URL: {play_url}\n")
 
                 url = play_url
 
@@ -284,16 +299,16 @@ class MyClient(discord.Client):
         except TimeoutException as e:
             await self.breakpoint("4 - No video detected:", driver, ctx)
 
-            print('[DEBUG TRACE] TimeoutException caught, Testing for slideshow: ', e, '\n')
+            self.log('[DEBUG TRACE] TimeoutException caught, Testing for slideshow: ', e, '\n')
 
             photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
 
             if photoscheck:  
-                print('[DEBUG TRACE] Photos found\n')
+                self.log('[DEBUG TRACE] Photos found\n')
                 return
 
     async def web_scrape(self, driver, ctx, headers, spoilerwarning, *, userinput=None, override=False):
-            print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+            self.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
 
             link = await self.run_prechecks(driver, ctx, spoilerwarning, userinput=userinput, override=override)
             if link is None: return
@@ -311,22 +326,22 @@ class MyClient(discord.Client):
                 
                 if os.path.exists('output.mp4'):
                     os.remove('output.mp4')
-                    print('[DEBUG TRACE] file removed\n')
+                    self.log('[DEBUG TRACE] file removed\n')
 
                 if r.status_code == 200:
                     with open('output.mp4', 'wb') as f:
                         f.write(r.content)
-                    print('[DEBUG TRACE] video downloaded\n')
+                    self.log('[DEBUG TRACE] video downloaded\n')
 
                     # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
                     os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
                     log_file = open("log.txt","r")
                     log_file_content = log_file.read()
-                    print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+                    self.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}')
 
                     try:
                         await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
-                        print('[DEBUG TRACE] file sent\n')
+                        self.log('[DEBUG TRACE] file sent\n')
                         self.lastlink = link
                     except discord.HTTPException as e:
                         if e.code == 40005:
@@ -334,18 +349,18 @@ class MyClient(discord.Client):
                         else:
                             raise
                 else:
-                    print(r.status_code, '\n')
+                    self.log(f'[DEBUG TRACE] Error downloading video. Status code: {r.status_code}\n')
                     await self.handle_error(r.status_code, ctx, link=link)
     
     async def process_slideshow(self, driver, ctx, headers, spoilerwarning, *, userinput=None):
-                print(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
+                self.log(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n')
                 
                 await self.breakpoint("5 - slideshow 1:", driver, ctx)
 
                 wrapper = WebDriverWait(driver, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
-                print(f'[DEBUG TRACE] wrapper found\n')
+                self.log(f'[DEBUG TRACE] wrapper found\n')
                 divs = WebDriverWait(wrapper, 10, 0.5, (StaleElementReferenceException)).until(lambda x: x.find_elements(By.TAG_NAME, 'div'))
-                print(f'[DEBUG TRACE] div found\n')
+                self.log(f'[DEBUG TRACE] div found\n')
                 
                 await self.breakpoint("6 - slideshow 2:", driver, ctx)
 
@@ -385,7 +400,7 @@ class MyClient(discord.Client):
                     os.remove(f'img{num}.png')
                     num+=1
                 files.clear()
-                print('[DEBUG TRACE] files cleared\n')
+                self.log('[DEBUG TRACE] files cleared\n')
                 fnum = 0
                 if isinstance(ctx, discord.Interaction):
                     await ctx.followup.send('<' + userinput + '>')
@@ -682,9 +697,9 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
     driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
 
     try:
-        print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+        client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
         
-        print(f'[DEBUG TRACE] message detected: {link}\n')
+        client.log(f'[DEBUG TRACE] message detected: {link}\n')
 
         lst = link.split(' ')
         for word in lst:
@@ -692,7 +707,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                 if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
                 link = word.strip('||')
 
-        print(f'[DEBUG TRACE] extracted link: {link}\n')
+        client.log(f'[DEBUG TRACE] extracted link: {link}\n')
         
         driver.get(link)
 
@@ -708,7 +723,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
         except:
             pass
 
-        print(f'[DEBUG TRACE] No mature content detected\n')
+        client.log(f'[DEBUG TRACE] No mature content detected\n')
 
         await client.breakpoint("1 - After Pre-checks:", driver, interaction)
 
@@ -726,30 +741,30 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             await interaction.followup.send("No free views", ephemeral=True)
             return
         
-        print(f'[DEBUG TRACE] Found username\n')
+        client.log(f'[DEBUG TRACE] Found username\n')
         
         meta = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:description']")))
         desc = meta.get_attribute("content")
         
-        print(f'[DEBUG TRACE] Found description\n')
+        client.log(f'[DEBUG TRACE] Found description\n')
 
         if len(desc)>2000:
             desc = desc[:1900] + "..."
-            print(f'[DEBUG TRACE] Description shrunk\n')
+            client.log(f'[DEBUG TRACE] Description shrunk\n')
 
         header=None
 
         try:
            header = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.TAG_NAME, "h1"))).text
            header = '**' + header + '**'
-           print(f'[DEBUG TRACE] Found header\n')
+           client.log(f'[DEBUG TRACE] Found header\n')
         except:
             pass
 
         fulldesc = '*' + username + ':* ' + desc
 
         if link == client.lastlink:
-            print(f'[DEBUG TRACE] last link matched: {link}\n')
+            client.log(f'[DEBUG TRACE] last link matched: {link}\n')
             await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
             if header: await interaction.channel.send(header)
             await interaction.channel.send(fulldesc)
@@ -769,24 +784,24 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             
             if os.path.exists('output.mp4'):
                 os.remove('output.mp4')
-                print('[DEBUG TRACE] file removed\n')
+                client.log('[DEBUG TRACE] file removed\n')
 
             if r.status_code == 200:
                 with open('output.mp4', 'wb') as f:
                     f.write(r.content)
-                print('[DEBUG TRACE] video downloaded\n')
+                client.log('[DEBUG TRACE] video downloaded\n')
 
                 # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
                 os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
                 log_file = open("log.txt","r")
                 log_file_content = log_file.read()
-                print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+                client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}')
 
                 try:
                     await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
                     if header: await interaction.channel.send(header)
                     await interaction.channel.send(fulldesc)
-                    print('[DEBUG TRACE] file sent\n')
+                    client.log('[DEBUG TRACE] file sent\n')
                     client.lastlink = link
                 except discord.HTTPException as e:
                     if e.code == 40005:
@@ -796,7 +811,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
                     else:
                         raise
             else:
-                print(r.status_code, '\n')
+                client.log(f'[DEBUG TRACE] Error downloading video: {r.status_code}\n')
                 await client.handle_error(r.status_code, interaction, link=link)
     except Exception as e:
         await client.handle_error(e, interaction, link=link)
@@ -820,9 +835,9 @@ async def candice(interaction: discord.Interaction, link: str, spoilered: Litera
     driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
 
     try:
-        print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+        client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
         
-        print(f'[DEBUG TRACE] message detected: {link}\n')
+        client.log(f'[DEBUG TRACE] message detected: {link}\n')
 
         lst = link.split(' ')
         for word in lst:
@@ -830,7 +845,7 @@ async def candice(interaction: discord.Interaction, link: str, spoilered: Litera
                 if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
                 link = word.strip('||')
 
-        print(f'[DEBUG TRACE] extracted link: {link}\n')
+        client.log(f'[DEBUG TRACE] extracted link: {link}\n')
         
         driver.get(link)
 
@@ -846,7 +861,7 @@ async def candice(interaction: discord.Interaction, link: str, spoilered: Litera
         except:
             pass
 
-        print(f'[DEBUG TRACE] No mature content detected\n')
+        client.log(f'[DEBUG TRACE] No mature content detected\n')
 
         await client.breakpoint("1 - After Pre-checks:", driver, interaction)
 
@@ -864,43 +879,43 @@ async def candice(interaction: discord.Interaction, link: str, spoilered: Litera
             await interaction.followup.send("No free views", ephemeral=True)
             return
         
-        print(f'[DEBUG TRACE] Found username\n')
+        client.log(f'[DEBUG TRACE] Found username\n')
         
         meta = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:description']")))
         desc = meta.get_attribute("content")
         
-        print(f'[DEBUG TRACE] Found description\n')
+        client.log(f'[DEBUG TRACE] Found description\n')
 
         if len(desc)>2000:
             desc = desc[:1900] + "..."
-            print(f'[DEBUG TRACE] Description shrunk\n')
+            client.log(f'[DEBUG TRACE] Description shrunk\n')
 
         header=None
 
         try:
             header = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.TAG_NAME, "h1"))).text
             header = '**' + header + '**'
-            print(f'[DEBUG TRACE] Found header\n')
+            client.log(f'[DEBUG TRACE] Found header\n')
         except:
             pass
 
         fulldesc = '*' + username + ':* ' + desc
 
         if link == client.lastlink:
-            print(f'[DEBUG TRACE] last link matched: {link}\n')
+            client.log(f'[DEBUG TRACE] last link matched: {link}\n')
             await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
             if header: await interaction.channel.send(header)
             await interaction.channel.send(fulldesc)
             return
 
         try:
-            print('[DEBUG TRACE] Searching for video\n')
+            client.log('[DEBUG TRACE] Searching for video\n')
             
             await client.breakpoint("3 - After Photos Check (No Slideshow Detected):", driver, interaction)
 
             element = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
         
-            print('[DEBUG TRACE] element found\n')
+            client.log('[DEBUG TRACE] element found\n')
 
             await client.breakpoint("4 - Video element detected:", driver, interaction)
             
@@ -909,15 +924,15 @@ async def candice(interaction: discord.Interaction, link: str, spoilered: Litera
             script_tag = soup.find("script", id="__UNIVERSAL_DATA_FOR_REHYDRATION__")
             if script_tag:
                 data = json.loads(script_tag.string)
-                print('[DEBUG TRACE] script found\n')
+                client.log('[DEBUG TRACE] script found\n')
 
                 play_url1 = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 2], data)
                 play_url2 = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 1], data)
                 play_url3 = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 0], data)
 
-                print("[DEBUG TRACE] CDN URL1:", play_url1, "\n")
-                print("[DEBUG TRACE] CDN URL2:", play_url2, "\n")
-                print("[DEBUG TRACE] CDN URL3:", play_url3, "\n")
+                client.log(f'[DEBUG TRACE] CDN URL1: {play_url1}\n')
+                client.log(f'[DEBUG TRACE] CDN URL2: {play_url2}\n')
+                client.log(f'[DEBUG TRACE] CDN URL3: {play_url3}\n')
 
                 url1 = play_url1
                 url2 = play_url2
@@ -926,12 +941,12 @@ async def candice(interaction: discord.Interaction, link: str, spoilered: Litera
         except TimeoutException as e:
             await client.breakpoint("5 - After video check:", driver, interaction)
 
-            print('[DEBUG TRACE] TimeoutException caught, Testing for slideshow: ', e, '\n')
+            client.log(f'[DEBUG TRACE] TimeoutException caught, Testing for slideshow: {e}\n')
 
             photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
 
             if photoscheck:  
-                print('[DEBUG TRACE] Photos found\n')
+                client.log('[DEBUG TRACE] Photos found\n')
                 return
 
         for url in [url1,url2,url3]:
@@ -948,24 +963,24 @@ async def candice(interaction: discord.Interaction, link: str, spoilered: Litera
                 
                 if os.path.exists('output.mp4'):
                     os.remove('output.mp4')
-                    print('[DEBUG TRACE] file removed\n')
+                    client.log('[DEBUG TRACE] file removed\n')
 
                 if r.status_code == 200:
                     with open('output.mp4', 'wb') as f:
                         f.write(r.content)
-                    print('[DEBUG TRACE] video downloaded\n')
+                    client.log('[DEBUG TRACE] video downloaded\n')
 
                     # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
                     os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
                     log_file = open("log.txt","r")
                     log_file_content = log_file.read()
-                    print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+                    client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}\n')
 
                     try:
                         await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
                         if header: await interaction.channel.send(header)
                         await interaction.channel.send(fulldesc)
-                        print('[DEBUG TRACE] file sent\n')
+                        client.log('[DEBUG TRACE] file sent\n')
                         client.lastlink = link
                     except discord.HTTPException as e:
                         if e.code == 40005:
@@ -975,7 +990,7 @@ async def candice(interaction: discord.Interaction, link: str, spoilered: Litera
                         else:
                             raise
                 else:
-                    print(r.status_code, '\n')
+                    client.log(f'[DEBUG TRACE] Request failed with status code: {r.status_code}\n')
                     await client.handle_error(r.status_code, interaction, link=link)
     except Exception as e:
         await client.handle_error(e, interaction, link=link)
@@ -999,9 +1014,9 @@ async def with_audio(interaction: discord.Interaction, link: str, spoilered: Lit
     driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
 
     try:
-        print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+        client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
         
-        print(f'[DEBUG TRACE] message detected: {link}\n')
+        client.log(f'[DEBUG TRACE] message detected: {link}\n')
 
         lst = link.split(' ')
         for word in lst:
@@ -1009,7 +1024,7 @@ async def with_audio(interaction: discord.Interaction, link: str, spoilered: Lit
                 if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
                 link = word.strip('||')
 
-        print(f'[DEBUG TRACE] extracted link: {link}\n')
+        client.log(f'[DEBUG TRACE] extracted link: {link}\n')
         
         driver.get(link)
 
@@ -1018,14 +1033,14 @@ async def with_audio(interaction: discord.Interaction, link: str, spoilered: Lit
             maturecontent = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'p')))
             for words in maturecontent:
                 if words.text == 'Log in to TikTok':
-                    print(f'[DEBUG TRACE] Mature content detected\n')
+                    client.log(f'[DEBUG TRACE] Mature content detected\n')
                     await interaction.followup.send(link)
                     await client.generic_message(interaction, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=True)
                     return
         except:
             pass
 
-        print(f'[DEBUG TRACE] No mature content detected\n')
+        client.log(f'[DEBUG TRACE] No mature content detected\n')
 
         await client.breakpoint("1 - After Pre-checks:", driver, interaction)
 
@@ -1044,7 +1059,7 @@ async def with_audio(interaction: discord.Interaction, link: str, spoilered: Lit
             await interaction.followup.send("No free views", ephemeral=True)
             return
         
-        print(f'[DEBUG TRACE] Found username\n')
+        client.log(f'[DEBUG TRACE] Found username\n')
 
         music=None
 
