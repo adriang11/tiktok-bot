@@ -125,6 +125,7 @@ class MyClient(discord.Client):
         try:   
             s = gdshortener.ISGDShortener()
             short = s.shorten(cdn_url)
+            await self.log(f"[DEBUG TRACE] GDShortener Response: {short}\n", ctx)
 
             final_url = short[0] if short else cdn_url
         except Exception as e:
@@ -265,13 +266,13 @@ class MyClient(discord.Client):
                     await ctx.followup.send("No free views", ephemeral=True)
                 return
             
-            self.log(f'[DEBUG TRACE] View stealing protected\n', ctx)
+            await self.log(f'[DEBUG TRACE] View stealing protected\n', ctx)
 
         return link
 
     async def find_video(self, driver, ctx):
         try:
-            self.log('[DEBUG TRACE] Searching for video\n', ctx)
+            await self.log('[DEBUG TRACE] Searching for video\n', ctx)
             
             await self.breakpoint("3 - Checking for Video:", driver, ctx)
 
@@ -414,6 +415,10 @@ class MyClient(discord.Client):
         if self.toggle:
             test = await self.acronym_check(message)
             if test: return
+
+        if 'long ass link' in message.content:
+            await message.reply("Please just stfu...")
+            return
 
         if '.tiktok.com/' not in message.content:
             return
