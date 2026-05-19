@@ -416,7 +416,7 @@ class MyClient(discord.Client):
             test = await self.acronym_check(message)
             if test: return
 
-        if 'long ass link' in message.content:
+        if 'long ass link' in message.content.lower():
             await message.reply("Please just stfu...")
             return
 
