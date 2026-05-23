@@ -300,7 +300,7 @@ class MyClient(discord.Client):
         except TimeoutException as e:
             await self.breakpoint("4 - No video detected:", driver, ctx)
 
-            await self.log('[DEBUG TRACE] TimeoutException caught, Testing for slideshow: ', e, '\n', ctx)
+            await self.log(f'[DEBUG TRACE] TimeoutException caught, Testing for slideshow: {e.msg}\n', ctx)
 
             photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
 
