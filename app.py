@@ -143,10 +143,12 @@ class MyClient(discord.Client):
         async def send_response(content, *, mention_author=True, delete_after=30):
             # Handle both discord.Message and discord.Interaction
             if isinstance(ctx, discord.Message):
-                return await ctx.reply(content, mention_author=mention_author, delete_after=delete_after)
+                if self.debugmode: return await ctx.reply(content, mention_author=mention_author) #dont delete error if debugging
+                else: return await ctx.reply(content, mention_author=mention_author, delete_after=delete_after)
             elif isinstance(ctx, discord.Interaction):
                 await ctx.followup.send(link) 
-                return await ctx.followup.send(content, ephemeral=True) 
+                if self.debugmode: return await ctx.followup.send(content, ephemeral=False) 
+                else: return await ctx.followup.send(content, ephemeral=True) 
 
         if isinstance(e, OSError):
             if str(e).startswith('No connection adapters were found for'):
@@ -305,7 +307,7 @@ class MyClient(discord.Client):
             photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
 
             if photoscheck:  
-                await self.log('[DEBUG TRACE] Photos found\n')
+                await self.log('[DEBUG TRACE] Photos found\n', ctx)
                 return
 
     async def web_scrape(self, driver, ctx, headers, spoilerwarning, *, userinput=None, override=False):
