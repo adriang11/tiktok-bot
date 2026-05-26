@@ -152,14 +152,14 @@ class MyClient(discord.Client):
 
         if isinstance(e, OSError):
             if str(e).startswith('No connection adapters were found for'):
-                print('[DEBUG TRACE] Blob link detected: ', e, '\n')
+                await self.log(f'[DEBUG TRACE] Blob link detected: {e}\n', ctx)
                 if isinstance(ctx, discord.Interaction):
                     return await ctx.followup.send('If at first you don\'t succeed, try and try again', ephemeral=True) 
             else:
-                print('[DEBUG TRACE] WindowsError caught: ', e, '\n')
+                await self.log(f'[DEBUG TRACE] WindowsError caught: {e}\n', ctx)
                 await send_response('Bot is working on another thing. Count to 10 and try again.')
         elif isinstance(e, InvalidArgumentException):
-            print('[DEBUG TRACE] InvalidArgumentException caught: ', e.msg, '\n')
+            await self.log(f'[DEBUG TRACE] InvalidArgumentException caught: {e.msg}\n', ctx)
             if 'x.com/' in link:
                 fixuplink = link.replace('x.com', 'fixupx.com', 1)
 
@@ -168,16 +168,16 @@ class MyClient(discord.Client):
             else:
                 await send_response('Please send a valid tiktok link...')
         elif isinstance(e, TimeoutException):
-            print('[DEBUG TRACE] TimeoutException caught: ', e, '\n')
+            await self.log(f'[DEBUG TRACE] TimeoutException caught: {e}\n', ctx)
             await send_response('Failure.')
         elif isinstance(e, SessionNotCreatedException):
-            print('[DEBUG TRACE] SessionNotCreated caught: ', e, '\n')
+            await self.log(f'[DEBUG TRACE] SessionNotCreated caught: {e}\n', ctx)
             await send_response('[ERROR] Session not created: please notify Adrian to update Chromedriver')
         elif isinstance(e, StaleElementReferenceException):
-            print('[DEBUG TRACE] StaleElementReferenceException caught: ', e, '\n')
+            await self.log(f'[DEBUG TRACE] StaleElementReferenceException caught: {e}\n', ctx)
             await send_response('Stale like a moldy piece of bread...')
         elif isinstance(e, discord.errors.HTTPException):
-            print('[DEBUG TRACE] HTTPException caught: ', e, '\n')
+            await self.log(f'[DEBUG TRACE] HTTPException caught: {e}\n', ctx)
             client.lastlink = "" # Do not store video if error
 
             if isinstance(ctx, discord.Message):
@@ -186,13 +186,13 @@ class MyClient(discord.Client):
                 await ctx.followup.send(link)
                 return await ctx.followup.send(':P', ephemeral=True)
         elif isinstance(e, int):
-            print('[DEBUG TRACE] Status Code Error Caught: ' + str(e) + ' (its over, they\'re onto us)')
+            await self.log(f'[DEBUG TRACE] Status Code Error Caught: {e} (its over, they\'re onto us)\n', ctx)
             if e == 429:
                 await send_response('Rate Limited (They\'re onto us) Please try again in a moment')
             else:
                 await send_response('Status Code Error: ' + str(e) + ' Please ping Adrian')
         else:
-            print('oopsies\n')
+            await self.log(f'[DEBUG TRACE] Unknown Error Caught: {e}\n', ctx)
             traceback.print_exc()
             feedback = 'Unknown Error:' + str(e)
             await send_response(feedback, mention_author=True)
@@ -217,10 +217,10 @@ class MyClient(discord.Client):
         elif isinstance(ctx, discord.Interaction):
             link = userinput
         
-        print(f'[DEBUG TRACE] message detected: {link}\n')
+        await self.log(f'[DEBUG TRACE] message detected: {link}\n', ctx)
 
         if link == self.lastlink:
-            print(f'[DEBUG TRACE] last link matched: {link}\n')
+            await self.log(f'[DEBUG TRACE] last link matched: {link}\n', ctx)
             await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
             return
 
@@ -230,7 +230,7 @@ class MyClient(discord.Client):
                 if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
                 link = word.strip('||')
 
-        print(f'[DEBUG TRACE] extracted link: {link}\n')
+        await self.log(f'[DEBUG TRACE] extracted link: {link}\n', ctx)
         
         driver.get(link)
 
@@ -239,7 +239,7 @@ class MyClient(discord.Client):
             maturecontent = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'p')))
             for words in maturecontent:
                 if words.text == 'Log in to TikTok':
-                    print(f'[DEBUG TRACE] Mature content detected\n')
+                    await self.log(f'[DEBUG TRACE] Mature content detected\n', ctx)
                     if isinstance(ctx, discord.Interaction): await ctx.followup.send(link)
                     await self.generic_message(ctx, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=False)
                     return
@@ -387,7 +387,7 @@ class MyClient(discord.Client):
                                 os.remove(f'img{num}.png')
                                 num+=1
                             files.clear()
-                            print('[DEBUG TRACE] files cleared\n')
+                            await self.log('[DEBUG TRACE] files cleared\n', ctx)
                             fnum = 0
                         
                         filename = f"img{fnum+1}.png"
@@ -446,7 +446,7 @@ class MyClient(discord.Client):
             if '.tiktok.com/' in message.content and '/@' not in message.content:
                 await self.web_scrape(driver, message, headers, spoilerwarning)
         except Exception as e: 
-            print(f'[DEBUG TRACE] Standard error detected', '\n')
+            await self.log(f'[DEBUG TRACE] Standard error detected: {e}\n', message)
             await self.handle_error(e, message)
         finally:
             driver.quit()
@@ -474,7 +474,7 @@ async def coinflip(interaction: discord.Interaction):
 @client.tree.command(name = "blame", description = "Tells you exactly who to blame for anything") 
 async def blame(interaction: discord.Interaction):
     friend = random.choice(friends)
-    print("Blame game played: ", friend)
+    await client.log(f'Blame game played: {friend}\n', interaction)
     await interaction.response.send_message("This is clearly " + friend.title() + "\'s fault")
 
 @client.tree.command(name = "wisdom", description = "Receive a random wisdom from Pascal the Sea Otter") 
@@ -483,19 +483,19 @@ async def daily_wisdom(interaction: discord.Interaction):
     lines = fd.readlines()
     wisdom = random.choice(lines)
     fd.close()
-    print("Wisdom sent: ", wisdom)
+    await client.log(f'Wisdom sent: {wisdom}\n', interaction)
     await interaction.response.send_message(wisdom)
 
 @client.tree.command(name = "mywisdom", description = "Receive a random wisdom from Adrian the Chango") 
 async def adrians_wisdom(interaction: discord.Interaction):
     wisdom = random.choice(client.wisdoms)
-    print("Wisdom sent: ", wisdom)
+    await client.log(f'Wisdom sent: {wisdom}\n', interaction)
     await interaction.response.send_message(wisdom)
 
 @client.tree.command(name = "divswisdom", description = "Receive a random wisdom from Divanni the Gomez") 
 async def divs_wisdom3(interaction: discord.Interaction):
     wisdom = random.choice(client.divswisdoms)
-    print("Wisdom sent: ", wisdom)
+    await client.log(f'Wisdom sent: {wisdom}\n', interaction)
     await interaction.response.send_message(wisdom)
 
 @client.tree.command(name = "toggle", description = "Toggle acronym troll on/off") 
@@ -553,7 +553,7 @@ async def poll(interaction: discord.Interaction, message: str, choice1: str, cho
 
 @client.tree.command(name="test_birthday", description="Display all registered birthday(s) in the server")
 async def test_birthday(interaction: discord.Interaction, user: discord.User = None):
-    print(f'[DEBUG TRACE] test birthday called', '\n')
+    await client.log(f'[DEBUG TRACE] test birthday called\n', interaction)
 
     members = {"1":{"Name":"rachelle","Birthday":"1/3"},
                "2":{"Name":"ruth","Birthday":"1/18"},
@@ -576,12 +576,12 @@ async def test_birthday(interaction: discord.Interaction, user: discord.User = N
 
         mid = len(items) // 2
 
-        print(f'[DEBUG TRACE] midpoint is ', mid, '\n')
+        await client.log(f'[DEBUG TRACE] midpoint is {mid}\n', interaction)
         
         # If odd move midpoint over by 1
         if len(items) % 2:
             mid+=1
-            print(f'[DEBUG TRACE] list is odd: ', mid, '\n')
+            await client.log(f'[DEBUG TRACE] list is odd: {mid}\n', interaction)
 
         first_half = items[:mid]
         second_half = items[mid:]
@@ -654,7 +654,7 @@ async def sugma(interaction: discord.Interaction, link: str, spoilered: Literal[
     try:
         await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
     except Exception as e:
-        print(f'[DEBUG TRACE] Standard error detected', '\n')
+        await client.log(f'[DEBUG TRACE] Standard error detected: {e}\n', interaction)
         await client.handle_error(e, interaction, link=link)
     finally:
         driver.quit()
@@ -682,7 +682,7 @@ async def override(interaction: discord.Interaction, link: str, spoilered: Liter
     try:
         await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link, override=True)
     except Exception as e:
-        print(f'[DEBUG TRACE] Standard error detected', '\n')
+        await client.log(f'[DEBUG TRACE] Standard error detected: {e}\n', interaction)
         await client.handle_error(e, interaction, link=link)
     finally:
         driver.quit()
@@ -723,7 +723,7 @@ async def with_caption(interaction: discord.Interaction, link: str, spoilered: L
             maturecontent = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'p')))
             for words in maturecontent:
                 if words.text == 'Log in to TikTok':
-                    print(f'[DEBUG TRACE] Mature content detected\n')
+                    await client.log(f'[DEBUG TRACE] Mature content detected\n', interaction)
                     await interaction.followup.send(link)
                     await client.generic_message(interaction, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=True)
                     return
@@ -861,8 +861,8 @@ async def candice(interaction: discord.Interaction, link: str, spoilered: Litera
             maturecontent = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'p')))
             for words in maturecontent:
                 if words.text == 'Log in to TikTok':
-                    print(f'[DEBUG TRACE] Mature content detected\n')
-                    if isinstance(ctx, discord.Interaction): await interaction.followup.send(link)
+                    await client.log(f'[DEBUG TRACE] Mature content detected\n', interaction)
+                    await interaction.followup.send(link)
                     await client.generic_message(interaction, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=True)
                     return
         except:
@@ -1075,30 +1075,54 @@ async def with_audio(interaction: discord.Interaction, link: str, spoilered: Lit
         all_cookies = driver.get_cookies()
         cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
 
+        if music: 
+            try:
+                s = requests.get(music, cookies=cookies, headers=headers)
+
+                if os.path.exists('audio.wav'):
+                    os.remove('audio.wav')
+                    client.log('[DEBUG TRACE] audio file removed\n', interaction)
+
+                if s.status_code == 200:
+                    with open('audio.wav', 'wb') as f:
+                        f.write(s.content)
+                    client.log('[DEBUG TRACE] audio downloaded\n', interaction)
+                else:
+                    client.log(f'[DEBUG TRACE] Failed to download audio: {s.status_code}\n', interaction)
+                    await client.handle_error(s.status_code, interaction, link=link)
+            except OSError as e:
+                if str(e).startswith('No connection adapters were found for'):
+                    client.log(f'[DEBUG TRACE] Blob link detected:  No connection adapters were found for {music}\n', interaction)
+                    await client.generic_message(interaction, "Failed to get audio... (inaccessable file location)", ephemeral=True)
+                else:
+                    raise
+
         if url is None:
             await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
+            await interaction.channel.send(file=discord.File('audio.wav'))
+            client.log('[DEBUG TRACE] audio file sent\n', interaction)
 
         else:
             r = requests.get(url, cookies=cookies, headers=headers)
             
             if os.path.exists('output.mp4'):
                 os.remove('output.mp4')
-                print('[DEBUG TRACE] file removed\n')
+                client.log('[DEBUG TRACE] file removed\n', interaction)
 
             if r.status_code == 200:
                 with open('output.mp4', 'wb') as f:
                     f.write(r.content)
-                print('[DEBUG TRACE] video downloaded\n')
+                client.log('[DEBUG TRACE] video downloaded\n', interaction)
 
                 # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
                 os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
                 log_file = open("log.txt","r")
                 log_file_content = log_file.read()
-                print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+                client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}\n', interaction)
 
                 try:
                     await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
-                    print('[DEBUG TRACE] file sent\n')
+                    client.log('[DEBUG TRACE] file sent\n', interaction)
                     client.lastlink = link
                 except discord.HTTPException as e:
                     if e.code == 40005:
@@ -1106,46 +1130,20 @@ async def with_audio(interaction: discord.Interaction, link: str, spoilered: Lit
                     else:
                         raise
             else:
-                print(r.status_code, '\n')
+                client.log(f'[DEBUG TRACE] Failed to download video: {r.status_code}\n', interaction)
                 await client.handle_error(r.status_code, interaction, link=link)
 
         try:
-            print(f'[DEBUG TRACE] checking for audio\n')
+            client.log(f'[DEBUG TRACE] checking for audio\n', interaction)
             newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="Watch more videos with music"]'))).get_attribute('href')
-            print(f'[DEBUG TRACE] found video music disc\n')
+            client.log(f'[DEBUG TRACE] found video music disc\n', interaction)
             driver.get(newlink)
-            print(f'[DEBUG TRACE] navigated to site\n')
+            client.log(f'[DEBUG TRACE] navigated to site\n', interaction)
             music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
-            print(f'[DEBUG TRACE] got music\n') 
+            client.log(f'[DEBUG TRACE] got music\n', interaction) 
         except:
-            print(f'[DEBUG TRACE] failed to get music\n')
+            client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
             await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
-        if music: 
-            try:
-                s = requests.get(music, cookies=cookies, headers=headers)
-
-                if os.path.exists('audio.wav'):
-                    os.remove('audio.wav')
-                    print('[DEBUG TRACE] audio file removed\n')
-
-                if s.status_code == 200:
-                    with open('audio.wav', 'wb') as f:
-                        f.write(s.content)
-                    print('[DEBUG TRACE] audio downloaded\n')
-
-                    await interaction.channel.send(file=discord.File('audio.wav'))
-
-                    print('[DEBUG TRACE] audio file sent\n')
-
-                else:
-                    print(s.status_code, '\n')
-                    await client.handle_error(s.status_code, interaction, link=link)
-            except OSError as e:
-                if str(e).startswith('No connection adapters were found for'):
-                    print(f'[DEBUG TRACE] Blob link detected:  No connection adapters were found for {music}\n')
-                    await client.generic_message(interaction, "Failed to get audio... (inaccessable file location)", ephemeral=True)
-                else:
-                    raise
 
     except Exception as e:
         await client.handle_error(e, interaction, link=link)
@@ -1169,9 +1167,9 @@ async def meow(interaction: discord.Interaction, link: str, spoilered: Literal["
     driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
 
     try:
-        print(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n')
+        client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n', interaction)
         
-        print(f'[DEBUG TRACE] message detected: {link}\n')
+        client.log(f'[DEBUG TRACE] message detected: {link}\n', interaction)
 
         lst = link.split(' ')
         for word in lst:
@@ -1179,7 +1177,7 @@ async def meow(interaction: discord.Interaction, link: str, spoilered: Literal["
                 if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
                 link = word.strip('||')
 
-        print(f'[DEBUG TRACE] extracted link: {link}\n')
+        client.log(f'[DEBUG TRACE] extracted link: {link}\n', interaction)
         
         driver.get(link)
 
@@ -1188,14 +1186,14 @@ async def meow(interaction: discord.Interaction, link: str, spoilered: Literal["
             maturecontent = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'p')))
             for words in maturecontent:
                 if words.text == 'Log in to TikTok':
-                    print(f'[DEBUG TRACE] Mature content detected\n')
+                    await client.log(f'[DEBUG TRACE] Mature content detected\n', interaction)
                     await interaction.followup.send(link)
                     await client.generic_message(interaction, "Mature Content Detected. Gotta go to the app for this one buddy", ephemeral=True)
                     return
         except:
             pass
 
-        print(f'[DEBUG TRACE] No mature content detected\n')
+        client.log(f'[DEBUG TRACE] No mature content detected\n', interaction)
 
         await client.breakpoint("1 - After Pre-checks:", driver, interaction)
 
@@ -1214,23 +1212,23 @@ async def meow(interaction: discord.Interaction, link: str, spoilered: Literal["
             await interaction.followup.send("No free views", ephemeral=True)
             return
         
-        print(f'[DEBUG TRACE] Found username\n')
-        
+        client.log(f'[DEBUG TRACE] Found username\n', interaction)
+
         meta = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:description']")))
         desc = meta.get_attribute("content")
-        
-        print(f'[DEBUG TRACE] Found description\n')
+
+        client.log(f'[DEBUG TRACE] Found description\n', interaction)
 
         if len(desc)>2000:
             desc = desc[:1900] + "..."
-            print(f'[DEBUG TRACE] Description shrunk\n')
+            client.log(f'[DEBUG TRACE] Description shrunk\n', interaction)
 
         header=None
 
         try:
            header = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.TAG_NAME, "h1"))).text
            header = '**' + header + '**'
-           print(f'[DEBUG TRACE] Found header\n')
+           client.log(f'[DEBUG TRACE] Found header\n', interaction)
         except:
             pass
 
@@ -1253,24 +1251,24 @@ async def meow(interaction: discord.Interaction, link: str, spoilered: Literal["
             
             if os.path.exists('output.mp4'):
                 os.remove('output.mp4')
-                print('[DEBUG TRACE] file removed\n')
+                client.log(f'[DEBUG TRACE] file removed\n', interaction)
 
             if r.status_code == 200:
                 with open('output.mp4', 'wb') as f:
                     f.write(r.content)
-                print('[DEBUG TRACE] video downloaded\n')
+                client.log(f'[DEBUG TRACE] video downloaded\n', interaction)
 
                 # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
                 os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
                 log_file = open("log.txt","r")
                 log_file_content = log_file.read()
-                print('[DEBUG TRACE] ffmpeg error log: ', log_file_content)
+                client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}\n', interaction)
 
                 try:
                     await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
                     if header: await interaction.channel.send(header)
                     await interaction.channel.send(fulldesc)
-                    print('[DEBUG TRACE] file sent\n')
+                    client.log(f'[DEBUG TRACE] file sent\n', interaction)
                     client.lastlink = link
                 except discord.HTTPException as e:
                     if e.code == 40005:
@@ -1280,19 +1278,19 @@ async def meow(interaction: discord.Interaction, link: str, spoilered: Literal["
                     else:
                         raise
             else:
-                print(r.status_code, '\n')
+                client.log(f'[DEBUG TRACE] failed to download video\n', interaction)
                 await client.handle_error(r.status_code, interaction, link=link)
 
         try:
-            print(f'[DEBUG TRACE] checking for audio\n')
+            client.log(f'[DEBUG TRACE] checking for audio\n', interaction)
             newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="Watch more videos with music"]'))).get_attribute('href')
-            print(f'[DEBUG TRACE] found video music disc\n')
+            client.log(f'[DEBUG TRACE] found video music disc\n', interaction)
             driver.get(newlink)
-            print(f'[DEBUG TRACE] navigated to site\n')
+            client.log(f'[DEBUG TRACE] navigated to site\n', interaction)
             music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
-            print(f'[DEBUG TRACE] got music\n') 
+            client.log(f'[DEBUG TRACE] got music\n', interaction)
         except:
-            print(f'[DEBUG TRACE] failed to get music\n')
+            client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
             await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
         if music: 
             try:
@@ -1300,23 +1298,23 @@ async def meow(interaction: discord.Interaction, link: str, spoilered: Literal["
 
                 if os.path.exists('audio.wav'):
                     os.remove('audio.wav')
-                    print('[DEBUG TRACE] audio file removed\n')
+                    client.log(f'[DEBUG TRACE] audio file removed\n', interaction)
 
                 if s.status_code == 200:
                     with open('audio.wav', 'wb') as f:
                         f.write(s.content)
-                    print('[DEBUG TRACE] audio downloaded\n')
+                    client.log(f'[DEBUG TRACE] audio downloaded\n', interaction)
 
                     await interaction.channel.send(file=discord.File('audio.wav'))
 
-                    print('[DEBUG TRACE] audio file sent\n')
+                    client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
 
                 else:
-                    print(s.status_code, '\n')
+                    client.log(f'[DEBUG TRACE] failed to download audio\n', interaction)
                     await client.handle_error(s.status_code, interaction, link=link)
             except OSError as e:
                 if str(e).startswith('No connection adapters were found for'):
-                    print(f'[DEBUG TRACE] Blob link detected:  No connection adapters were found for {music}\n')
+                    client.log(f'[DEBUG TRACE] Blob link detected:  No connection adapters were found for {music}\n', interaction)
                     await client.generic_message(interaction, "Failed to get audio... (inaccessable file location)", ephemeral=True)
                 else:
                     raise
