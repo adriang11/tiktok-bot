@@ -124,8 +124,8 @@ class MyClient(discord.Client):
     async def handle_large_upload(self, ctx, cdn_url, spoilerwarning=False):
         client.lastlink = "" # Do not store video if large file
         try:   
-            s = pyshorteners.Shortener(api_key='a577cdbe851d566b01c4a051070733e3481a167b')
-            short =s.bitly.short(cdn_url)
+            s = pyshorteners.Shortener()
+            short = s.tinyurl.short(cdn_url)
             await self.log(f"[DEBUG TRACE] Shortener Response: {short}\n", ctx)
 
             final_url = short if short else cdn_url
