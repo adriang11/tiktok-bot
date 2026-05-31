@@ -38,7 +38,7 @@ TOKEN = os.getenv('TOKEN')
 CHROME_DRIVER_PATH = os.getenv('CHROME_DRIVER_PATH')
 WISDOM = os.getenv('ENCODED_FILE')
 DIVS_WISDOM = os.getenv('DIVS_ENCODED_FILE')
-
+TINYURL_KEY = os.getenv('TINYURL_KEY')
 class MyClient(discord.Client):
     def __init__(self, *, intents: discord.Intents):
         super().__init__(intents=intents)
@@ -124,8 +124,22 @@ class MyClient(discord.Client):
     async def handle_large_upload(self, ctx, cdn_url, spoilerwarning=False):
         client.lastlink = "" # Do not store video if large file
         try:   
-            s = pyshorteners.Shortener()
-            short = s.tinyurl.short(cdn_url)
+            headers = {
+                "Authorization": f"Bearer {TINYURL_KEY}",
+                "Content-Type": "application/json"
+            }
+
+            r = requests.post(
+                "https://api.tinyurl.com/create",
+                headers=headers,
+                json={"url": cdn_url},
+                timeout=10
+            )
+            
+            r.raise_for_status()
+
+            short = r.json()["data"]["tiny_url"]
+            
             await self.log(f"[DEBUG TRACE] Shortener Response: {short}\n", ctx)
 
             final_url = short if short else cdn_url
