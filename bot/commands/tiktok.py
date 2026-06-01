@@ -10,6 +10,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from bot.data.statics import headers
+from bot.utils import create_driver
 from toolz import get_in
 from typing import Literal
 
@@ -21,15 +22,7 @@ def register(client):
         
         spoilerwarning = spoilered == "true"
 
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless=new')
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument("--disable-gpu")
-        options.add_argument('--no-sandbox')
-        options.add_argument(f"user-agent={headers}")
-
-        driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+        driver = create_driver(headers)
 
         try:
             await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
@@ -49,15 +42,7 @@ def register(client):
         
         spoilerwarning = spoilered == "true"
 
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless=new')
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument("--disable-gpu")
-        options.add_argument('--no-sandbox')
-        options.add_argument(f"user-agent={headers}")
-
-        driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+        driver = create_driver(headers)
 
         try:
             await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link, override=True)
@@ -73,15 +58,7 @@ def register(client):
         
         spoilerwarning = spoilered == "true"
 
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless=new')
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument("--disable-gpu")
-        options.add_argument('--no-sandbox')
-        options.add_argument(f"user-agent={headers}")
-
-        driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+        driver = create_driver(headers)
 
         try:
             await client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n', interaction)
@@ -211,15 +188,7 @@ def register(client):
 
         spoilerwarning = spoilered == "true"
 
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless=new')
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument("--disable-gpu")
-        options.add_argument('--no-sandbox')
-        options.add_argument(f"user-agent={headers}")
-
-        driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+        driver = create_driver(headers)
 
         try:
             await client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n', interaction)
@@ -390,15 +359,7 @@ def register(client):
         
         spoilerwarning = spoilered == "true"
 
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless=new')
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument("--disable-gpu")
-        options.add_argument('--no-sandbox')
-        options.add_argument(f"user-agent={headers}")
-
-        driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+        driver = create_driver(headers)
 
         try:
             await client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n', interaction)
@@ -455,6 +416,18 @@ def register(client):
             all_cookies = driver.get_cookies()
             cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
 
+            try:
+                client.log(f'[DEBUG TRACE] checking for audio\n', interaction)
+                newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="Watch more videos with music"]'))).get_attribute('href')
+                client.log(f'[DEBUG TRACE] found video music disc\n', interaction)
+                driver.get(newlink)
+                client.log(f'[DEBUG TRACE] navigated to site\n', interaction)
+                music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
+                client.log(f'[DEBUG TRACE] got music\n', interaction) 
+            except:
+                client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
+                await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
+
             if music: 
                 try:
                     s = requests.get(music, cookies=cookies, headers=headers)
@@ -504,6 +477,8 @@ def register(client):
                         await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
                         client.log('[DEBUG TRACE] file sent\n', interaction)
                         client.lastlink = link
+                        await interaction.channel.send(file=discord.File('audio.wav'))
+                        client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
                     except discord.HTTPException as e:
                         if e.code == 40005:
                             await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
@@ -512,18 +487,6 @@ def register(client):
                 else:
                     client.log(f'[DEBUG TRACE] Failed to download video: {r.status_code}\n', interaction)
                     await client.handle_error(r.status_code, interaction, link=link)
-
-            try:
-                client.log(f'[DEBUG TRACE] checking for audio\n', interaction)
-                newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="Watch more videos with music"]'))).get_attribute('href')
-                client.log(f'[DEBUG TRACE] found video music disc\n', interaction)
-                driver.get(newlink)
-                client.log(f'[DEBUG TRACE] navigated to site\n', interaction)
-                music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
-                client.log(f'[DEBUG TRACE] got music\n', interaction) 
-            except:
-                client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
-                await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
 
         except Exception as e:
             await client.handle_error(e, interaction, link=link)
@@ -536,15 +499,7 @@ def register(client):
         
         spoilerwarning = spoilered == "true"
 
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless=new')
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument("--disable-gpu")
-        options.add_argument('--no-sandbox')
-        options.add_argument(f"user-agent={headers}")
-
-        driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+        driver = create_driver(headers)
 
         try:
             client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n', interaction)
@@ -621,10 +576,46 @@ def register(client):
             all_cookies = driver.get_cookies()
             cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
 
+            try:
+                client.log(f'[DEBUG TRACE] checking for audio\n', interaction)
+                newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="Watch more videos with music"]'))).get_attribute('href')
+                client.log(f'[DEBUG TRACE] found video music disc\n', interaction)
+                driver.get(newlink)
+                client.log(f'[DEBUG TRACE] navigated to site\n', interaction)
+                music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
+                client.log(f'[DEBUG TRACE] got music\n', interaction)
+            except:
+                client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
+                await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
+            
+            if music: 
+                try:
+                    s = requests.get(music, cookies=cookies, headers=headers)
+
+                    if os.path.exists('audio.wav'):
+                        os.remove('audio.wav')
+                        client.log(f'[DEBUG TRACE] audio file removed\n', interaction)
+
+                    if s.status_code == 200:
+                        with open('audio.wav', 'wb') as f:
+                            f.write(s.content)
+                        client.log(f'[DEBUG TRACE] audio downloaded\n', interaction)
+                    else:
+                        client.log(f'[DEBUG TRACE] failed to download audio\n', interaction)
+                        await client.handle_error(s.status_code, interaction, link=link)
+                except OSError as e:
+                    if str(e).startswith('No connection adapters were found for'):
+                        client.log(f'[DEBUG TRACE] Blob link detected:  No connection adapters were found for {music}\n', interaction)
+                        await client.generic_message(interaction, "Failed to get audio... (inaccessable file location)", ephemeral=True)
+                    else:
+                        raise
+
             if url is None:
                 await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
                 if header: await interaction.channel.send(header)
                 await interaction.channel.send(fulldesc)
+                await interaction.channel.send(file=discord.File('audio.wav'))
+                client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
 
             else:
                 r = requests.get(url, cookies=cookies, headers=headers)
@@ -649,6 +640,8 @@ def register(client):
                         if header: await interaction.channel.send(header)
                         await interaction.channel.send(fulldesc)
                         client.log(f'[DEBUG TRACE] file sent\n', interaction)
+                        await interaction.channel.send(file=discord.File('audio.wav'))
+                        client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
                         client.lastlink = link
                     except discord.HTTPException as e:
                         if e.code == 40005:
@@ -661,43 +654,6 @@ def register(client):
                     client.log(f'[DEBUG TRACE] failed to download video\n', interaction)
                     await client.handle_error(r.status_code, interaction, link=link)
 
-            try:
-                client.log(f'[DEBUG TRACE] checking for audio\n', interaction)
-                newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="Watch more videos with music"]'))).get_attribute('href')
-                client.log(f'[DEBUG TRACE] found video music disc\n', interaction)
-                driver.get(newlink)
-                client.log(f'[DEBUG TRACE] navigated to site\n', interaction)
-                music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
-                client.log(f'[DEBUG TRACE] got music\n', interaction)
-            except:
-                client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
-                await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
-            if music: 
-                try:
-                    s = requests.get(music, cookies=cookies, headers=headers)
-
-                    if os.path.exists('audio.wav'):
-                        os.remove('audio.wav')
-                        client.log(f'[DEBUG TRACE] audio file removed\n', interaction)
-
-                    if s.status_code == 200:
-                        with open('audio.wav', 'wb') as f:
-                            f.write(s.content)
-                        client.log(f'[DEBUG TRACE] audio downloaded\n', interaction)
-
-                        await interaction.channel.send(file=discord.File('audio.wav'))
-
-                        client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
-
-                    else:
-                        client.log(f'[DEBUG TRACE] failed to download audio\n', interaction)
-                        await client.handle_error(s.status_code, interaction, link=link)
-                except OSError as e:
-                    if str(e).startswith('No connection adapters were found for'):
-                        client.log(f'[DEBUG TRACE] Blob link detected:  No connection adapters were found for {music}\n', interaction)
-                        await client.generic_message(interaction, "Failed to get audio... (inaccessable file location)", ephemeral=True)
-                    else:
-                        raise
         except Exception as e:
             await client.handle_error(e, interaction, link=link)
         finally:
