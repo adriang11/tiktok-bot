@@ -417,15 +417,15 @@ def register(client):
             cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
 
             try:
-                client.log(f'[DEBUG TRACE] checking for audio\n', interaction)
+                await client.log(f'[DEBUG TRACE] checking for audio\n', interaction)
                 newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="Watch more videos with music"]'))).get_attribute('href')
-                client.log(f'[DEBUG TRACE] found video music disc\n', interaction)
+                await client.log(f'[DEBUG TRACE] found video music disc\n', interaction)
                 driver.get(newlink)
-                client.log(f'[DEBUG TRACE] navigated to site\n', interaction)
+                await client.log(f'[DEBUG TRACE] navigated to site\n', interaction)
                 music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
-                client.log(f'[DEBUG TRACE] got music\n', interaction) 
+                await client.log(f'[DEBUG TRACE] got music\n', interaction) 
             except:
-                client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
+                await client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
                 await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
 
             if music: 
@@ -434,18 +434,18 @@ def register(client):
 
                     if os.path.exists('audio.wav'):
                         os.remove('audio.wav')
-                        client.log('[DEBUG TRACE] audio file removed\n', interaction)
+                        await client.log('[DEBUG TRACE] audio file removed\n', interaction)
 
                     if s.status_code == 200:
                         with open('audio.wav', 'wb') as f:
                             f.write(s.content)
-                        client.log('[DEBUG TRACE] audio downloaded\n', interaction)
+                        await client.log('[DEBUG TRACE] audio downloaded\n', interaction)
                     else:
-                        client.log(f'[DEBUG TRACE] Failed to download audio: {s.status_code}\n', interaction)
+                        await client.log(f'[DEBUG TRACE] Failed to download audio: {s.status_code}\n', interaction)
                         await client.handle_error(s.status_code, interaction, link=link)
                 except OSError as e:
                     if str(e).startswith('No connection adapters were found for'):
-                        client.log(f'[DEBUG TRACE] Blob link detected:  No connection adapters were found for {music}\n', interaction)
+                        await client.log(f'[DEBUG TRACE] Blob link detected:  No connection adapters were found for {music}\n', interaction)
                         await client.generic_message(interaction, "Failed to get audio... (inaccessable file location)", ephemeral=True)
                     else:
                         raise
@@ -453,41 +453,41 @@ def register(client):
             if url is None:
                 await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
                 await interaction.channel.send(file=discord.File('audio.wav'))
-                client.log('[DEBUG TRACE] audio file sent\n', interaction)
+                await client.log('[DEBUG TRACE] audio file sent\n', interaction)
 
             else:
                 r = requests.get(url, cookies=cookies, headers=headers)
                 
                 if os.path.exists('output.mp4'):
                     os.remove('output.mp4')
-                    client.log('[DEBUG TRACE] file removed\n', interaction)
+                    await client.log('[DEBUG TRACE] file removed\n', interaction)
 
                 if r.status_code == 200:
                     with open('output.mp4', 'wb') as f:
                         f.write(r.content)
-                    client.log('[DEBUG TRACE] video downloaded\n', interaction)
+                    await client.log('[DEBUG TRACE] video downloaded\n', interaction)
 
                     # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
                     os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
                     log_file = open("log.txt","r")
                     log_file_content = log_file.read()
-                    client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}\n', interaction)
+                    await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}\n', interaction)
 
                     try:
                         await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
-                        client.log('[DEBUG TRACE] file sent\n', interaction)
+                        await client.log('[DEBUG TRACE] file sent\n', interaction)
                         client.lastlink = link
                         await interaction.channel.send(file=discord.File('audio.wav'))
-                        client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
+                        await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
                     except discord.HTTPException as e:
                         if e.code == 40005:
                             await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
                             await interaction.channel.send(file=discord.File('audio.wav'))
-                            client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
+                            await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
                         else:
                             raise
                 else:
-                    client.log(f'[DEBUG TRACE] Failed to download video: {r.status_code}\n', interaction)
+                    await client.log(f'[DEBUG TRACE] Failed to download video: {r.status_code}\n', interaction)
                     await client.handle_error(r.status_code, interaction, link=link)
 
         except Exception as e:
@@ -504,9 +504,9 @@ def register(client):
         driver = create_driver(headers)
 
         try:
-            client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n', interaction)
+            await client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n', interaction)
             
-            client.log(f'[DEBUG TRACE] message detected: {link}\n', interaction)
+            await client.log(f'[DEBUG TRACE] message detected: {link}\n', interaction)
 
             lst = link.split(' ')
             for word in lst:
@@ -514,7 +514,7 @@ def register(client):
                     if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
                     link = word.strip('||')
 
-            client.log(f'[DEBUG TRACE] extracted link: {link}\n', interaction)
+            await client.log(f'[DEBUG TRACE] extracted link: {link}\n', interaction)
             
             driver.get(link)
 
@@ -530,7 +530,7 @@ def register(client):
             except:
                 pass
 
-            client.log(f'[DEBUG TRACE] No mature content detected\n', interaction)
+            await client.log(f'[DEBUG TRACE] No mature content detected\n', interaction)
 
             await client.breakpoint("1 - After Pre-checks:", driver, interaction)
 
@@ -549,23 +549,23 @@ def register(client):
                 await interaction.followup.send("No free views", ephemeral=True)
                 return
             
-            client.log(f'[DEBUG TRACE] Found username\n', interaction)
+            await client.log(f'[DEBUG TRACE] Found username\n', interaction)
 
             meta = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:description']")))
             desc = meta.get_attribute("content")
 
-            client.log(f'[DEBUG TRACE] Found description\n', interaction)
+            await client.log(f'[DEBUG TRACE] Found description\n', interaction)
 
             if len(desc)>2000:
                 desc = desc[:1900] + "..."
-                client.log(f'[DEBUG TRACE] Description shrunk\n', interaction)
+                await client.log(f'[DEBUG TRACE] Description shrunk\n', interaction)
 
             header=None
 
             try:
                 header = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.TAG_NAME, "h1"))).text
                 header = '**' + header + '**'
-                client.log(f'[DEBUG TRACE] Found header\n', interaction)
+                await client.log(f'[DEBUG TRACE] Found header\n', interaction)
             except:
                 pass
 
@@ -579,15 +579,15 @@ def register(client):
             cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
 
             try:
-                client.log(f'[DEBUG TRACE] checking for audio\n', interaction)
+                await client.log(f'[DEBUG TRACE] checking for audio\n', interaction)
                 newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="Watch more videos with music"]'))).get_attribute('href')
-                client.log(f'[DEBUG TRACE] found video music disc\n', interaction)
+                await client.log(f'[DEBUG TRACE] found video music disc\n', interaction)
                 driver.get(newlink)
-                client.log(f'[DEBUG TRACE] navigated to site\n', interaction)
+                await client.log(f'[DEBUG TRACE] navigated to site\n', interaction)
                 music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
-                client.log(f'[DEBUG TRACE] got music\n', interaction)
+                await client.log(f'[DEBUG TRACE] got music\n', interaction)
             except:
-                client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
+                await client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
                 await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
             
             if music: 
@@ -596,18 +596,18 @@ def register(client):
 
                     if os.path.exists('audio.wav'):
                         os.remove('audio.wav')
-                        client.log(f'[DEBUG TRACE] audio file removed\n', interaction)
+                        await client.log(f'[DEBUG TRACE] audio file removed\n', interaction)
 
                     if s.status_code == 200:
                         with open('audio.wav', 'wb') as f:
                             f.write(s.content)
-                        client.log(f'[DEBUG TRACE] audio downloaded\n', interaction)
+                        await client.log(f'[DEBUG TRACE] audio downloaded\n', interaction)
                     else:
-                        client.log(f'[DEBUG TRACE] failed to download audio\n', interaction)
+                        await client.log(f'[DEBUG TRACE] failed to download audio\n', interaction)
                         await client.handle_error(s.status_code, interaction, link=link)
                 except OSError as e:
                     if str(e).startswith('No connection adapters were found for'):
-                        client.log(f'[DEBUG TRACE] Blob link detected:  No connection adapters were found for {music}\n', interaction)
+                        await client.log(f'[DEBUG TRACE] Blob link detected:  No connection adapters were found for {music}\n', interaction)
                         await client.generic_message(interaction, "Failed to get audio... (inaccessable file location)", ephemeral=True)
                     else:
                         raise
@@ -617,33 +617,33 @@ def register(client):
                 if header: await interaction.channel.send(header)
                 await interaction.channel.send(fulldesc)
                 await interaction.channel.send(file=discord.File('audio.wav'))
-                client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
+                await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
 
             else:
                 r = requests.get(url, cookies=cookies, headers=headers)
                 
                 if os.path.exists('output.mp4'):
                     os.remove('output.mp4')
-                    client.log(f'[DEBUG TRACE] file removed\n', interaction)
+                    await client.log(f'[DEBUG TRACE] file removed\n', interaction)
 
                 if r.status_code == 200:
                     with open('output.mp4', 'wb') as f:
                         f.write(r.content)
-                    client.log(f'[DEBUG TRACE] video downloaded\n', interaction)
+                    await client.log(f'[DEBUG TRACE] video downloaded\n', interaction)
 
                     # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
                     os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
                     log_file = open("log.txt","r")
                     log_file_content = log_file.read()
-                    client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}\n', interaction)
+                    await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}\n', interaction)
 
                     try:
                         await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
                         if header: await interaction.channel.send(header)
                         await interaction.channel.send(fulldesc)
-                        client.log(f'[DEBUG TRACE] file sent\n', interaction)
+                        await client.log(f'[DEBUG TRACE] file sent\n', interaction)
                         await interaction.channel.send(file=discord.File('audio.wav'))
-                        client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
+                        await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
                         client.lastlink = link
                     except discord.HTTPException as e:
                         if e.code == 40005:
@@ -651,11 +651,11 @@ def register(client):
                             if header: await interaction.channel.send(header)
                             await interaction.channel.send(fulldesc)
                             await interaction.channel.send(file=discord.File('audio.wav'))
-                            client.log(f'[DEBUG TRACE] audio file sent\n', interaction)    
+                            await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)    
                         else:
                             raise
                 else:
-                    client.log(f'[DEBUG TRACE] failed to download video\n', interaction)
+                    await client.log(f'[DEBUG TRACE] failed to download video\n', interaction)
                     await client.handle_error(r.status_code, interaction, link=link)
 
         except Exception as e:
