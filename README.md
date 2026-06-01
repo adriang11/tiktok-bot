@@ -5,8 +5,8 @@ A Discord bot that replies to TikTok links with the corresponding video file for
 Dependencies: Selenium Webdriver, Discord.py, Python's Requests library
 
 ## How does it work?
-Uses Selenium WebDriver's headless browser to extract data from the given link.
-Makes a get request with Axios on the URL of the video (found in the src tag of the HTML), streams the response to a file, and sends the file in chat on Discord.
+Uses Selenium WebDriver's headless browser to extract the data needed to download videos or photo slideshows from a given TikTok link.
+Once the media URL is found, the bot downloads the content directly from TikTok's CDN and uploads it back to Discord. If the file is too large for Discord's upload limits, it automatically sends a direct download link instead.
 Additionally interfaces with Heroku to host the bot 24/7 on the cloud.
 
 ## Required Permissions
@@ -24,7 +24,8 @@ When running this project locally, the installed version of Chromedriver should 
 You can find the latest stable builds  
 https://googlechromelabs.github.io/chrome-for-testing/
 
-## Challenges
-Currently, the video is being loaded via JavaScript as a stream or Blob, and the actual media file isn't exposed via a direct HTTP link.
-This goes against the original flow of the bot which scraped the video from the DOM of the webpage.
-Working on a fix to go around this.
+## 2025 Rework
+The original version of the bot located the video URL directly from the rendered page and downloaded it from the DOM.
+TikTok later changed how media is delivered, making the old approach unreliable. Rather than relying on visible page elements, the bot now extracts metadata from TikTok's embedded page data.
+The bot loads the page with Selenium, parses the embedded JSON payload, retrieves the video's CDN URL, and downloads the media directly using the active browser session cookies.
+This approach is more resilient to frontend UI changes and works for both standard videos and photo slideshows.

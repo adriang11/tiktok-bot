@@ -1,6 +1,6 @@
 from selenium import webdriver
 
-async def create_driver(headers):
+def create_driver(headers):
         options = webdriver.ChromeOptions()
         options.add_argument('--headless=new')
         options.add_argument("--window-size=1920,1080")
