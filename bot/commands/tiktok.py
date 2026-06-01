@@ -10,7 +10,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from bot.data.statics import headers
-from bot.utils import create_driver
+from bot.utils.driver import create_driver
 from toolz import get_in
 from typing import Literal
 
@@ -482,6 +482,8 @@ def register(client):
                     except discord.HTTPException as e:
                         if e.code == 40005:
                             await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                            await interaction.channel.send(file=discord.File('audio.wav'))
+                            client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
                         else:
                             raise
                 else:
@@ -648,6 +650,8 @@ def register(client):
                             await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
                             if header: await interaction.channel.send(header)
                             await interaction.channel.send(fulldesc)
+                            await interaction.channel.send(file=discord.File('audio.wav'))
+                            client.log(f'[DEBUG TRACE] audio file sent\n', interaction)    
                         else:
                             raise
                 else:
