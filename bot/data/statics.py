@@ -6,6 +6,8 @@ headers = {
             'Referer':'https://www.tiktok.com/'
         }
 
+no_free_views = ['@11adrian19','@rn.vg','@mnymchns','@po0japanchal']
+
 friends = ['rohan','jasper','hari','fabian','adams','nik','div','adrian','ruth','pooja','jeen','jotch','sadiya','abdul','sharia','becca','fermi','paul','juno','dattu','brandon','neha','jenn','tommy','gurt','bchan','gyro','abe','david','dibya','christian','jmoney123','Dr. Frundles','ian']
 
 acronym_list = {

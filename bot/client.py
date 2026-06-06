@@ -26,8 +26,10 @@ from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
 from bot.data.statics import acronym_list
-from bot.data.statics import friends
+from bot.data.statics import no_free_views
 from bot.data.statics import headers
+from bot.utils.driver import create_driver
+from bot.utils.validation import validate_file
 from toolz import get_in
 from typing import Optional
 from typing import Literal
@@ -42,6 +44,7 @@ class MyClient(discord.Client):
         self.lastlink = ""
         self.toggle = False
         self.debugmode = False
+        self.screencap = False
         self.wisdoms = []
         self.divswisdoms = []
     
@@ -104,6 +107,12 @@ class MyClient(discord.Client):
             else:
                 self.debugmode = False
             return self.debugmode
+        if attribute == 'screencap':
+            if not self.screencap:
+                self.screencap = True
+            else:
+                self.screencap = False
+            return self.screencap
 
     async def log(self, content, ctx):
         print(content)
@@ -112,7 +121,7 @@ class MyClient(discord.Client):
             await ctx.channel.send(content)
 
     async def breakpoint(self, content, driver, message):
-        if self.debugmode: 
+        if self.debugmode and self.screencap: 
             driver.get_screenshot_as_file("screenshot.png")
             await message.channel.send(f"{content}", file=discord.File('screenshot.png'))
 
@@ -262,8 +271,6 @@ class MyClient(discord.Client):
 
         await self.breakpoint("1 - After Pre-checks:", driver, ctx)
 
-        no_free_views = ['@11adrian19','@rn.vg','@mnymchns','@po0japanchal']
-
         if not override:
             user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
             url = user.get_attribute("content")
@@ -348,21 +355,21 @@ class MyClient(discord.Client):
                         f.write(r.content)
                     await self.log('[DEBUG TRACE] video downloaded\n', ctx)
 
-                    # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
-                    os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
-                    log_file = open("log.txt","r")
-                    log_file_content = log_file.read()
+                    log_file_content = validate_file()
+                    
                     await self.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', ctx)
-
-                    try:
-                        await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
-                        await self.log('[DEBUG TRACE] file sent\n', ctx)
-                        self.lastlink = link
-                    except discord.HTTPException as e:
-                        if e.code == 40005:
-                            await self.handle_large_upload(ctx, url, spoilerwarning=spoilerwarning)
-                        else:
-                            raise
+                    if log_file_content == "":  
+                        await self.handle_large_upload(ctx, url, spoilerwarning=spoilerwarning)
+                    else:
+                        try:
+                            await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
+                            await self.log('[DEBUG TRACE] file sent\n', ctx)
+                            self.lastlink = link
+                        except discord.HTTPException as e:
+                            if e.code == 40005:
+                                await self.handle_large_upload(ctx, url, spoilerwarning=spoilerwarning)
+                            else:
+                                raise
                 else:
                     await self.log(f'[DEBUG TRACE] Error downloading video. Status code: {r.status_code}\n', ctx)
                     await self.handle_error(r.status_code, ctx, link=link)
@@ -438,17 +445,7 @@ class MyClient(discord.Client):
 
         service = Service(executable_path=CHROME_DRIVER_PATH)
 
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless=new')
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument("--disable-gpu")
-        options.add_argument('--no-sandbox')
-        options.add_argument(f"user-agent={headers}")
-
-        # initialize the Selenium WebDriver
-        # driver = webdriver.Chrome(service=service, options=options)
-        driver = webdriver.Chrome(options=options) # CHROMEDRIVER_PATH is no longer needed
+        driver = create_driver(headers)
 
         try:
             if '.tiktok.com/' in message.content and '/@' not in message.content:
