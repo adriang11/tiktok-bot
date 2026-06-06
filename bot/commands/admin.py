@@ -17,6 +17,16 @@ def register(client):
         response = "Debug Mode set to " + str(tog)
         await interaction.response.send_message(response)
 
+    @client.tree.command(name = "screencap", description = "Take screenshots along with debug info") 
+    async def screencap(interaction: discord.Interaction):
+        if interaction.user.id != 474713843181027328:
+            await interaction.response.send_message("You are not Adrian.", ephemeral=True)
+            return
+
+        tog = await client.toggler('screencap')
+        response = "Screencap Mode set to " + str(tog)
+        await interaction.response.send_message(response)
+
     @client.tree.command(name = "clearlast", description = "Clear the last saved tiktok link") 
     async def clear_last(interaction: discord.Interaction):
         client.lastlink = ""

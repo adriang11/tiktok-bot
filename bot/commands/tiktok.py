@@ -10,7 +10,9 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from bot.data.statics import headers
+from bot.data.statics import no_free_views
 from bot.utils.driver import create_driver
+from bot.utils.validation import validate_file
 from toolz import get_in
 from typing import Literal
 
@@ -91,8 +93,6 @@ def register(client):
 
             await client.breakpoint("1 - After Pre-checks:", driver, interaction)
 
-            no_free_views = ['@11adrian19','@rn.vg','@mnymchns','@po0japanchal']
-
             user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
             url = user.get_attribute("content")
             lst = url.split('/')
@@ -154,26 +154,28 @@ def register(client):
                     with open('output.mp4', 'wb') as f:
                         f.write(r.content)
                     await client.log('[DEBUG TRACE] video downloaded\n', interaction)
-
-                    # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
-                    os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
-                    log_file = open("log.txt","r")
-                    log_file_content = log_file.read()
+                    
+                    log_file_content = validate_file()
+                    
                     await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', interaction)
-
-                    try:
-                        await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
+                    if log_file_content == "":  
+                        await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
                         if header: await interaction.channel.send(header)
                         await interaction.channel.send(fulldesc)
-                        await client.log('[DEBUG TRACE] file sent\n', interaction)
-                        client.lastlink = link
-                    except discord.HTTPException as e:
-                        if e.code == 40005:
-                            await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                    else:
+                        try:
+                            await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
                             if header: await interaction.channel.send(header)
                             await interaction.channel.send(fulldesc)
-                        else:
-                            raise
+                            await client.log('[DEBUG TRACE] file sent\n', interaction)
+                            client.lastlink = link
+                        except discord.HTTPException as e:
+                            if e.code == 40005:
+                                await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                                if header: await interaction.channel.send(header)
+                                await interaction.channel.send(fulldesc)
+                            else:
+                                raise
                 else:
                     await client.log(f'[DEBUG TRACE] Error downloading video: {r.status_code}\n', interaction)
                     await client.handle_error(r.status_code, interaction, link=link)
@@ -220,8 +222,6 @@ def register(client):
             await client.log(f'[DEBUG TRACE] No mature content detected\n', interaction)
 
             await client.breakpoint("1 - After Pre-checks:", driver, interaction)
-
-            no_free_views = ['@11adrian19','@rn.vg','@mnymchns','@po0japanchal']
 
             user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
             url = user.get_attribute("content")
@@ -326,25 +326,25 @@ def register(client):
                             f.write(r.content)
                         await client.log('[DEBUG TRACE] video downloaded\n', interaction)
 
-                        # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
-                        os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
-                        log_file = open("log.txt","r")
-                        log_file_content = log_file.read()
-                        await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}\n', interaction)
-
-                        try:
-                            await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
-                            if header: await interaction.channel.send(header)
-                            await interaction.channel.send(fulldesc)
-                            await client.log('[DEBUG TRACE] file sent\n', interaction)
-                            client.lastlink = link
-                        except discord.HTTPException as e:
-                            if e.code == 40005:
-                                await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                        log_file_content = validate_file()
+                    
+                        await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', interaction)
+                        if log_file_content == "":  
+                            await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                        else:
+                            try:
+                                await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
                                 if header: await interaction.channel.send(header)
                                 await interaction.channel.send(fulldesc)
-                            else:
-                                raise
+                                await client.log('[DEBUG TRACE] file sent\n', interaction)
+                                client.lastlink = link
+                            except discord.HTTPException as e:
+                                if e.code == 40005:
+                                    await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                                    if header: await interaction.channel.send(header)
+                                    await interaction.channel.send(fulldesc)
+                                else:
+                                    raise
                     else:
                         await client.log(f'[DEBUG TRACE] Request failed with status code: {r.status_code}\n', interaction)
                         await client.handle_error(r.status_code, interaction, link=link)
@@ -391,8 +391,6 @@ def register(client):
             await client.log(f'[DEBUG TRACE] No mature content detected\n', interaction)
 
             await client.breakpoint("1 - After Pre-checks:", driver, interaction)
-
-            no_free_views = ['@11adrian19','@rn.vg','@mnymchns','@po0japanchal']
 
             user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
 
@@ -451,6 +449,7 @@ def register(client):
                         raise
 
             if url is None:
+                driver.get(link)
                 await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
                 await interaction.channel.send(file=discord.File('audio.wav'))
                 await client.log('[DEBUG TRACE] audio file sent\n', interaction)
@@ -467,25 +466,27 @@ def register(client):
                         f.write(r.content)
                     await client.log('[DEBUG TRACE] video downloaded\n', interaction)
 
-                    # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
-                    os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
-                    log_file = open("log.txt","r")
-                    log_file_content = log_file.read()
-                    await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}\n', interaction)
-
-                    try:
-                        await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
-                        await client.log('[DEBUG TRACE] file sent\n', interaction)
-                        client.lastlink = link
+                    log_file_content = validate_file()
+                    
+                    await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', interaction)
+                    if log_file_content == "":  
+                        await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
                         await interaction.channel.send(file=discord.File('audio.wav'))
                         await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
-                    except discord.HTTPException as e:
-                        if e.code == 40005:
-                            await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                    else:
+                        try:
+                            await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
+                            await client.log('[DEBUG TRACE] file sent\n', interaction)
+                            client.lastlink = link
                             await interaction.channel.send(file=discord.File('audio.wav'))
                             await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
-                        else:
-                            raise
+                        except discord.HTTPException as e:
+                            if e.code == 40005:
+                                await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                                await interaction.channel.send(file=discord.File('audio.wav'))
+                                await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
+                            else:
+                                raise
                 else:
                     await client.log(f'[DEBUG TRACE] Failed to download video: {r.status_code}\n', interaction)
                     await client.handle_error(r.status_code, interaction, link=link)
@@ -533,8 +534,6 @@ def register(client):
             await client.log(f'[DEBUG TRACE] No mature content detected\n', interaction)
 
             await client.breakpoint("1 - After Pre-checks:", driver, interaction)
-
-            no_free_views = ['@11adrian19','@rn.vg','@mnymchns','@po0japanchal']
 
             user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
 
@@ -613,6 +612,7 @@ def register(client):
                         raise
 
             if url is None:
+                driver.get(link)
                 await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
                 if header: await interaction.channel.send(header)
                 await interaction.channel.send(fulldesc)
@@ -631,29 +631,33 @@ def register(client):
                         f.write(r.content)
                     await client.log(f'[DEBUG TRACE] video downloaded\n', interaction)
 
-                    # file validation, checks video codecs with ffmpeg and converts to mp4 if bitstream is hvec
-                    os.system("ffprobe -loglevel quiet -select_streams v -show_entries stream=codec_name -of default=nw=1:nk=1 output.mp4 > log.txt 2>&1")
-                    log_file = open("log.txt","r")
-                    log_file_content = log_file.read()
-                    await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}\n', interaction)
-
-                    try:
-                        await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
-                        if header: await interaction.channel.send(header)
+                    log_file_content = validate_file()
+                    
+                    await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', interaction)
+                    if log_file_content == "":  
+                        await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
                         await interaction.channel.send(fulldesc)
                         await client.log(f'[DEBUG TRACE] file sent\n', interaction)
                         await interaction.channel.send(file=discord.File('audio.wav'))
                         await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
-                        client.lastlink = link
-                    except discord.HTTPException as e:
-                        if e.code == 40005:
-                            await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                    else:
+                        try:
+                            await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
                             if header: await interaction.channel.send(header)
                             await interaction.channel.send(fulldesc)
+                            await client.log(f'[DEBUG TRACE] file sent\n', interaction)
                             await interaction.channel.send(file=discord.File('audio.wav'))
-                            await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)    
-                        else:
-                            raise
+                            await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
+                            client.lastlink = link
+                        except discord.HTTPException as e:
+                            if e.code == 40005:
+                                await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                                if header: await interaction.channel.send(header)
+                                await interaction.channel.send(fulldesc)
+                                await interaction.channel.send(file=discord.File('audio.wav'))
+                                await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)    
+                            else:
+                                raise
                 else:
                     await client.log(f'[DEBUG TRACE] failed to download video\n', interaction)
                     await client.handle_error(r.status_code, interaction, link=link)
