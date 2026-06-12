@@ -18,6 +18,7 @@ acronym_list = {
                 'asap':'asap = as soon as possible btw',
                 'bffr':'bffr = be fucking for real btw',
                 'bj':'bj = bad job btw',
+                'bogo':'bogo = buy one get one btw',
                 'brb':'brb = be right back btw',
                 'bs':'bs = bullshit btw',
                 'btw':'btw = by the way',
