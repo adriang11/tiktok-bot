@@ -28,6 +28,7 @@ from selenium.common.exceptions import TimeoutException
 from bot.data.statics import acronym_list
 from bot.data.statics import no_free_views
 from bot.data.statics import headers
+from bot.services.ig_handler import handle_ig_link
 from bot.utils.driver import create_driver
 from bot.utils.validation import validate_file
 from toolz import get_in
@@ -232,7 +233,6 @@ class MyClient(discord.Client):
             await ctx.channel.send(file=discord.File('output.mp4', spoiler=spoilerwarning))
 
     async def run_prechecks(self, driver, ctx, spoilerwarning, *, userinput=None, override=False):
-        # strip link from message if appicable
         if isinstance(ctx, discord.Message):
             link = ctx.content
         elif isinstance(ctx, discord.Interaction):
@@ -244,7 +244,8 @@ class MyClient(discord.Client):
             await self.log(f'[DEBUG TRACE] last link matched: {link}\n', ctx)
             await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
             return
-
+        
+        # strip link from message if appicable
         lst = link.split(' ')
         for word in lst:
             if '.tiktok.com/' in word:
@@ -427,6 +428,10 @@ class MyClient(discord.Client):
                 if isinstance(ctx, discord.Interaction):
                     await ctx.followup.send('<' + userinput + '>')
 
+    async def process_ig(self, driver, ctx, headers, spoilerwarning):
+        await self.log(f'[DEBUG TRACE] Entered IG flow', ctx)
+        await handle_ig_link(self, driver, ctx, headers, spoilerwarning)
+
     async def on_message(self, message):
         spoilerwarning = False
 
@@ -437,7 +442,7 @@ class MyClient(discord.Client):
             test = await self.acronym_check(message)
             if test: return
 
-        if '.tiktok.com/' not in message.content:
+        if '.tiktok.com/' not in message.content and '.instagram.com/' not in message.content:
             return
 
         if message.content.startswith("||") and message.content.endswith("||"):
@@ -450,6 +455,9 @@ class MyClient(discord.Client):
         try:
             if '.tiktok.com/' in message.content and '/@' not in message.content:
                 await self.web_scrape(driver, message, headers, spoilerwarning)
+            if '.instagram.com/' in message.content:
+                # experimental feature
+                await self.process_ig(driver, message, headers, spoilerwarning)
         except Exception as e: 
             await self.log(f'[DEBUG TRACE] Standard error detected: {e}\n', message)
             await self.handle_error(e, message)
