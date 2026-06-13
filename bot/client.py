@@ -129,25 +129,28 @@ class MyClient(discord.Client):
     async def handle_large_upload(self, ctx, cdn_url, spoilerwarning=False):
         self.lastlink = "" # Do not store video if large file
         try:   
-            headers = {
-                "Authorization": f"Bearer {TINYURL_KEY}",
-                "Content-Type": "application/json"
-            }
+            # headers = {
+            #     "Authorization": f"Bearer {TINYURL_KEY}",
+            #     "Content-Type": "application/json"
+            # }
 
-            r = requests.post(
-                "https://api.tinyurl.com/create",
-                headers=headers,
-                json={"url": cdn_url},
-                timeout=10
-            )
+            # r = requests.post(
+            #     "https://api.tinyurl.com/create",
+            #     headers=headers,
+            #     json={"url": cdn_url},
+            #     timeout=10
+            # )
             
-            r.raise_for_status()
+            # r.raise_for_status()
 
-            short = r.json()["data"]["tiny_url"]
+            # short = r.json()["data"]["tiny_url"]
             
-            await self.log(f"[DEBUG TRACE] Shortener Response: {short}\n", ctx)
+            # await self.log(f"[DEBUG TRACE] Shortener Response: {short}\n", ctx)
 
-            final_url = short if short else cdn_url
+            # final_url = short if short else cdn_url
+            s = pyshorteners.Shortener(api_key=SHORTIO_KEY, domain='chungus.s.gy')
+            final_url = s.shortcm.short(cdn_url)
+
         except Exception as e:
             await self.log(f"[DEBUG TRACE] URL shortening failed: {e}\n", ctx)
             final_url = cdn_url
