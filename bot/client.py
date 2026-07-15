@@ -150,6 +150,7 @@ class MyClient(discord.Client):
             # final_url = short if short else cdn_url
             s = pyshorteners.Shortener(api_key=SHORTIO_KEY, domain='chungus.s.gy')
             final_url = s.shortcm.short(cdn_url)
+            await self.log(f"[DEBUG TRACE] shortened URL: {final_url}\n", ctx)
 
         except Exception as e:
             await self.log(f"[DEBUG TRACE] URL shortening failed: {e}\n", ctx)
@@ -241,10 +242,10 @@ class MyClient(discord.Client):
         elif isinstance(ctx, discord.Interaction):
             link = userinput
         
-        await self.log(f'[DEBUG TRACE] message detected: {link}\n', ctx)
+        await self.log(f'[DEBUG TRACE] message detected: <{link}>\n', ctx)
 
         if link == self.lastlink:
-            await self.log(f'[DEBUG TRACE] last link matched: {link}\n', ctx)
+            await self.log(f'[DEBUG TRACE] last link matched: <{link}>\n', ctx)
             await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
             return
         
@@ -255,7 +256,7 @@ class MyClient(discord.Client):
                 if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
                 link = word.strip('||')
 
-        await self.log(f'[DEBUG TRACE] extracted link: {link}\n', ctx)
+        await self.log(f'[DEBUG TRACE] extracted link: <{link}>\n', ctx)
         
         driver.get(link)
 
@@ -314,7 +315,14 @@ class MyClient(discord.Client):
                 data = json.loads(script_tag.string)
                 await self.log('[DEBUG TRACE] script found\n', ctx)
 
-                play_url = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 2], data)
+                format = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "Format"], data)
+                await self.log(f"[DEBUG TRACE] video format: {format}\n", ctx)
+
+                if format == "dash":
+                    # Dash format video, will have video/audio separate otherwise
+                    play_url = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "PlayAddrStruct", "UrlList", 0], data)
+                else:
+                    play_url = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 2], data)
 
                 await self.log(f"[DEBUG TRACE] CDN URL: {play_url}\n", ctx)
 
@@ -362,18 +370,17 @@ class MyClient(discord.Client):
                     log_file_content = validate_file()
                     
                     await self.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', ctx)
-                    if log_file_content == "":  
-                        await self.handle_large_upload(ctx, url, spoilerwarning=spoilerwarning)
-                    else:
-                        try:
-                            await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
-                            await self.log('[DEBUG TRACE] file sent\n', ctx)
-                            self.lastlink = link
-                        except discord.HTTPException as e:
-                            if e.code == 40005:
-                                await self.handle_large_upload(ctx, url, spoilerwarning=spoilerwarning)
-                            else:
-                                raise
+
+                    try:
+                        await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
+                        await self.log('[DEBUG TRACE] file sent\n', ctx)
+                        self.lastlink = link
+                    except discord.HTTPException as e:
+                        if e.code == 40005:
+                            await self.log('[DEBUG TRACE] file upload failed. Initiating large upload sequence\n', ctx)
+                            await self.handle_large_upload(ctx, url, spoilerwarning=spoilerwarning)
+                        else:
+                            raise
                 else:
                     await self.log(f'[DEBUG TRACE] Error downloading video. Status code: {r.status_code}\n', ctx)
                     await self.handle_error(r.status_code, ctx, link=link)
@@ -459,9 +466,11 @@ class MyClient(discord.Client):
             if '.tiktok.com/' in message.content and '/@' not in message.content:
                 await self.web_scrape(driver, message, headers, spoilerwarning)
             if '.instagram.com/' in message.content:
-                # experimental feature
                 await self.process_ig(driver, message, headers, spoilerwarning)
         except Exception as e: 
+            if '.instagram.com/' in message.content:
+                # suppress error (experimental feature)
+                return
             await self.log(f'[DEBUG TRACE] Standard error detected: {e}\n', message)
             await self.handle_error(e, message)
         finally:
