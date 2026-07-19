@@ -101,7 +101,7 @@ async def handle_ig_link(client, driver, ctx, headers, spoilerwarning):
             shutil.copyfileobj(r.raw, out_file)
         del r
 
-        await ctx.channel.send(file=discord.File(filename, spoiler=spoilerwarning))
+        await ctx.reply(file=discord.File(filename, spoiler=spoilerwarning))
 
         os.remove(f'img1.png')
 
