@@ -214,7 +214,11 @@ class MyClient(discord.Client):
         elif isinstance(e, int):
             await self.log(f'[DEBUG TRACE] Status Code Error Caught: {e} (its over, they\'re onto us)\n', ctx)
             if e == 429:
-                await send_response('Rate Limited (They\'re onto us) Please try again in a moment')
+                # Silent error, try again later
+                if isinstance(ctx, discord.Message):
+                    return await ctx.reply('Rate Limited (They\'re onto us) Please try again in a moment', mention_author=True, delete_after=30)
+                elif isinstance(ctx, discord.Interaction):
+                    return await ctx.followup.send('Rate Limited (They\'re onto us) Please try again in a moment', ephemeral=True)
             else:
                 await send_response('Status Code Error: ' + str(e) + ' Please ping Adrian')
         else:
