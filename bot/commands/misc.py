@@ -30,7 +30,7 @@ def register(client):
 
     @client.tree.command(name = "wisdom", description = "Receive a random wisdom from Pascal the Sea Otter") 
     async def daily_wisdom(interaction: discord.Interaction):
-        fd = open("wisdom.txt", "r", encoding='utf-8')
+        fd = open("bot/data/wisdom.txt", "r", encoding='utf-8')
         lines = fd.readlines()
         wisdom = random.choice(lines)
         fd.close()
