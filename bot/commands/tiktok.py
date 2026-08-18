@@ -32,6 +32,7 @@ def register(client):
             await client.log(f'[DEBUG TRACE] Standard error detected: {e}\n', interaction)
             await client.handle_error(e, interaction, link=link)
         finally:
+            await client.log(f'[DEBUG TRACE] closing session', interaction)
             driver.quit()
 
     @client.tree.command(name = "override", description = "Send tiktok overriding no free views")
@@ -52,6 +53,7 @@ def register(client):
             await client.log(f'[DEBUG TRACE] Standard error detected: {e}\n', interaction)
             await client.handle_error(e, interaction, link=link)
         finally:
+            await client.log(f'[DEBUG TRACE] closing session', interaction)
             driver.quit()
 
     @client.tree.command(name = "withcaption", description = "Send tiktok with description")
@@ -182,6 +184,7 @@ def register(client):
         except Exception as e:
             await client.handle_error(e, interaction, link=link)
         finally:
+            await client.log(f'[DEBUG TRACE] closing session', interaction)
             driver.quit()
 
     @client.tree.command(name = "candice", description = "for dev testing: sends 3 CDN url links shortened")
@@ -351,6 +354,7 @@ def register(client):
         except Exception as e:
             await client.handle_error(e, interaction, link=link)
         finally:
+            await client.log(f'[DEBUG TRACE] closing session', interaction)
             driver.quit()
 
     @client.tree.command(name = "withaudio", description = "Send tiktok with audio")
@@ -494,6 +498,7 @@ def register(client):
         except Exception as e:
             await client.handle_error(e, interaction, link=link)
         finally:
+            await client.log(f'[DEBUG TRACE] closing session', interaction)
             driver.quit()
 
     @client.tree.command(name = "meow", description = "Send tiktok with description and audio")
@@ -665,4 +670,5 @@ def register(client):
         except Exception as e:
             await client.handle_error(e, interaction, link=link)
         finally:
+            await client.log(f'[DEBUG TRACE] closing session', interaction)
             driver.quit()

@@ -360,34 +360,39 @@ class MyClient(discord.Client):
                 all_cookies = driver.get_cookies()
                 cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
 
-                r = requests.get(url, cookies=cookies, headers=headers)
+                with requests.get(
+                    url,
+                    cookies=cookies,
+                    headers=headers,
+                    stream=True
+                ) as r:
+                    r.raise_for_status()
                 
-                if os.path.exists('output.mp4'):
-                    os.remove('output.mp4')
-                    await self.log('[DEBUG TRACE] file removed\n', ctx)
-
-                if r.status_code == 200:
+                    if os.path.exists('output.mp4'):
+                        os.remove('output.mp4')
+                        await self.log('[DEBUG TRACE] file removed\n', ctx)
+        
                     with open('output.mp4', 'wb') as f:
-                        f.write(r.content)
+                        for chunk in r.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
                     await self.log('[DEBUG TRACE] video downloaded\n', ctx)
 
-                    log_file_content = validate_file()
-                    
-                    await self.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', ctx)
+                log_file_content = validate_file()
+                
+                await self.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', ctx)
 
-                    try:
-                        await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
-                        await self.log('[DEBUG TRACE] file sent\n', ctx)
-                        self.lastlink = link
-                    except discord.HTTPException as e:
-                        if e.code == 40005:
-                            await self.log('[DEBUG TRACE] file upload failed. Initiating large upload sequence\n', ctx)
-                            await self.handle_large_upload(ctx, url, spoilerwarning=spoilerwarning)
-                        else:
-                            raise
-                else:
-                    await self.log(f'[DEBUG TRACE] Error downloading video. Status code: {r.status_code}\n', ctx)
-                    await self.handle_error(r.status_code, ctx, link=link)
+                try:
+                    await self.generic_output(ctx, link=link, spoilerwarning=spoilerwarning)
+                    await self.log('[DEBUG TRACE] file sent\n', ctx)
+                    self.lastlink = link
+                except discord.HTTPException as e:
+                    if e.code == 40005:
+                        await self.log('[DEBUG TRACE] file upload failed. Initiating large upload sequence\n', ctx)
+                        await self.handle_large_upload(ctx, url, spoilerwarning=spoilerwarning)
+                    else:
+                        raise
+                
     
     async def process_slideshow(self, driver, ctx, headers, spoilerwarning, *, userinput=None):
                 await self.log(f'[DEBUG TRACE] Jarvis, initiate TikTok Photos protocol\n', ctx)
@@ -478,4 +483,5 @@ class MyClient(discord.Client):
             await self.log(f'[DEBUG TRACE] Standard error detected: {e}\n', message)
             await self.handle_error(e, message)
         finally:
+            await self.log(f'[DEBUG TRACE] closing session', message)
             driver.quit()
