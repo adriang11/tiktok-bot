@@ -355,10 +355,17 @@ class MyClient(discord.Client):
 
             if url is None:
                 await self.process_slideshow(driver, ctx, headers, spoilerwarning, userinput=link)
-        
+                await self.log(f'[DEBUG TRACE] closing session\n', ctx)
+                driver.quit()
+                driver = None
+
             else:
                 all_cookies = driver.get_cookies()
                 cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
+
+                await self.log(f'[DEBUG TRACE] closing session\n', ctx)
+                driver.quit()
+                driver =None
 
                 with requests.get(
                     url,
@@ -483,5 +490,4 @@ class MyClient(discord.Client):
             await self.log(f'[DEBUG TRACE] Standard error detected: {e}\n', message)
             await self.handle_error(e, message)
         finally:
-            await self.log(f'[DEBUG TRACE] closing session', message)
             driver.quit()
