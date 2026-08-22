@@ -8,7 +8,7 @@ headers = {
 
 no_free_views = ['@11adrian19','@rn.vg','@mnymchns','@po0japanchal']
 
-friends = ['rohan','jasper','hari','fabian','adams','nik','div','adrian','ruth','pooja','jeen','jotch','sadiya','abdul','sharia','becca','fermi','paul','juno','dattu','brandon','neha','jenn','tommy','gurt','bchan','gyro','abe','david','dibya','christian','jmoney123','Dr. Frundles','ian']
+friends = ['rohan','jasper','hari','fabian','adams','nik','div','adrian','ruth','pooja','jeen','jotch','sadiya','abdul','sharia','becca','fermi','paul','juno','dattu','brandon','neha','jenn','tommy','rohan','jasper','hari','fabian','adams','nik','div','adrian','ruth','pooja','jeen','jotch','sadiya','abdul','sharia','becca','fermi','paul','juno','dattu','brandon','neha','jenn','tommy','gurt','bchan','gyro','abe','david','dibya','christian','jmoney123','Dr. Frundles','ian']
 
 acronym_list = {
                 'af':'af = as fuck btw',
@@ -68,6 +68,7 @@ acronym_list = {
                 'mfw':'mfw = my face when btw',
                 'mrt':'mrt = my ranked teammates btw',
                 'ngl':'ngl = not gonna lie btw',
+                'np':'np = no problem btw',
                 'nvm':'nvm = nevermind btw',
                 'obv':'obv = obviously btw',
                 'ong':'ong = on gaga btw',

@@ -332,7 +332,9 @@ class MyClient(discord.Client):
 
                 url = play_url
 
-            return url
+                return url
+
+            return None
         
         except TimeoutException as e:
             await self.breakpoint("4 - No video detected:", driver, ctx)
