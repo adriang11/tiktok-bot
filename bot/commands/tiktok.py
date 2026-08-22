@@ -9,6 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from bot import client
 from bot.data.statics import headers
 from bot.data.statics import no_free_views
 from bot.utils.driver import create_driver
@@ -145,6 +146,10 @@ def register(client):
             else:
                 all_cookies = driver.get_cookies()
                 cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
+
+                await client.log(f'[DEBUG TRACE] closing session\n', interaction)
+                driver.quit()
+                driver =None
 
                 r = requests.get(url, cookies=cookies, headers=headers)
                 
@@ -318,6 +323,10 @@ def register(client):
                     all_cookies = driver.get_cookies()
                     cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
 
+                    await client.log(f'[DEBUG TRACE] closing session\n', interaction)
+                    driver.quit()
+                    driver =None
+
                     r = requests.get(url, cookies=cookies, headers=headers)
                     
                     if os.path.exists('output.mp4'):
@@ -429,6 +438,10 @@ def register(client):
             except:
                 await client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
                 await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
+
+            await client.log(f'[DEBUG TRACE] closing session\n', interaction)
+            driver.quit()
+            driver =None
 
             if music: 
                 try:
@@ -593,7 +606,7 @@ def register(client):
             except:
                 await client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
                 await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
-            
+                
             if music: 
                 try:
                     s = requests.get(music, cookies=cookies, headers=headers)
@@ -626,6 +639,10 @@ def register(client):
 
             else:
                 r = requests.get(url, cookies=cookies, headers=headers)
+
+                await client.log(f'[DEBUG TRACE] closing session\n', interaction)
+                driver.quit()
+                driver =None
                 
                 if os.path.exists('output.mp4'):
                     os.remove('output.mp4')
