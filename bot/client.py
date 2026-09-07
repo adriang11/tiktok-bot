@@ -454,6 +454,7 @@ class MyClient(discord.Client):
                         del r
 
                 await ctx.channel.send(files=files)
+                await self.log('[DEBUG TRACE] photos sent\n', ctx)
                 num = 1
                 for file in files:
                     os.remove(f'img{num}.png')
