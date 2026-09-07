@@ -261,6 +261,14 @@ class MyClient(discord.Client):
                 link = word.strip('||')
 
         await self.log(f'[DEBUG TRACE] extracted link: <{link}>\n', ctx)
+
+        await self.log(f'[DEBUG TRACE] clearing tmp files\n', ctx)
+        if os.path.exists('output.mp4'):
+            os.remove('output.mp4')
+            await self.log('[DEBUG TRACE] video file removed\n', ctx)
+        if os.path.exists('audio.wav'):
+            os.remove('audio.wav')
+            await self.log('[DEBUG TRACE] audio file removed\n', ctx)
         
         driver.get(link)
 
@@ -306,7 +314,7 @@ class MyClient(discord.Client):
             
             await self.breakpoint("3 - Checking for Video:", driver, ctx)
 
-            element = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
+            element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
         
             await self.log('[DEBUG TRACE] element found\n', ctx)
 
@@ -446,6 +454,7 @@ class MyClient(discord.Client):
                         del r
 
                 await ctx.channel.send(files=files)
+                await self.log('[DEBUG TRACE] photos sent\n', ctx)
                 num = 1
                 for file in files:
                     os.remove(f'img{num}.png')
