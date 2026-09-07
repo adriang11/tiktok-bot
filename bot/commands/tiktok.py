@@ -439,9 +439,10 @@ def register(client):
                 await client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
                 await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
 
-            await client.log(f'[DEBUG TRACE] closing session\n', interaction)
-            driver.quit()
-            driver =None
+            if url is not None:
+                await client.log(f'[DEBUG TRACE] closing session\n', interaction)
+                driver.quit()
+                driver=None
 
             if music: 
                 try:
