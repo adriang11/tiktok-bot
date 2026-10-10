@@ -269,7 +269,8 @@ class MyClient(discord.Client):
         if os.path.exists('audio.wav'):
             os.remove('audio.wav')
             await self.log('[DEBUG TRACE] audio file removed\n', ctx)
-        
+
+        await self.log(f'[DEBUG TRACE] starting chrome\n', ctx)
         driver.get(link)
 
         # Run Prechecks
