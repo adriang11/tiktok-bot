@@ -1,3 +1,4 @@
+from email import message
 import os
 import base64
 import discord
@@ -480,7 +481,7 @@ class MyClient(discord.Client):
             test = await self.acronym_check(message)
             if test: return
 
-        if '.tiktok.com/' not in message.content and '.instagram.com/' not in message.content:
+        if '.tiktok.com/' not in message.content and '.tt.site/' not in message.content and '.instagram.com/' not in message.content:
             return
 
         if message.content.startswith("||") and message.content.endswith("||"):
@@ -491,7 +492,7 @@ class MyClient(discord.Client):
         driver = create_driver(headers)
 
         try:
-            if '.tiktok.com/' in message.content and '/@' not in message.content:
+            if ('.tiktok.com/' in message.content or '.tt.site/' in message.content) and '/@' not in message.content:
                 await self.web_scrape(driver, message, headers, spoilerwarning)
             if '.instagram.com/' in message.content:
                 await self.process_ig(driver, message, headers, spoilerwarning)
