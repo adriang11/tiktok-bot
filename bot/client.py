@@ -1,5 +1,4 @@
 import asyncio
-from email import message
 import os
 import base64
 import discord
@@ -50,6 +49,7 @@ class MyClient(discord.Client):
         self.screencap = False
         self.wisdoms = []
         self.divswisdoms = []
+        self.scrape_lock = asyncio.Lock()
     
     async def on_ready(self):
         await self.wait_until_ready()
