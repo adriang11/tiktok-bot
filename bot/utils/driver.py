@@ -12,7 +12,7 @@ def create_driver(headers):
         options.add_argument("--disable-background-networking")
         options.add_argument("--disable-sync")
         options.add_argument("--no-first-run")
-        options.add_argument("--window-size=1920,1080")
+        options.add_argument("--window-size=800,600")
 
         options.add_argument(f"user-agent={headers['User-Agent']}")
 
