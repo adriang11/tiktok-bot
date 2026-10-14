@@ -1,3 +1,4 @@
+import asyncio
 from email import message
 import os
 import base64
@@ -379,22 +380,48 @@ class MyClient(discord.Client):
                 driver.quit()
                 driver =None
 
+                if os.path.exists('output.mp4'):
+                    os.remove('output.mp4')
+                    await self.log('[DEBUG TRACE] file removed\n', ctx)
+
+                MAX_VIDEO_SIZE = 20 * 1024 * 1024  # 20 MB
+
                 with requests.get(
                     url,
                     cookies=cookies,
                     headers=headers,
-                    stream=True
+                    stream=True,
+                    timeout=(10, 30)
                 ) as r:
                     r.raise_for_status()
-                
-                    if os.path.exists('output.mp4'):
-                        os.remove('output.mp4')
-                        await self.log('[DEBUG TRACE] file removed\n', ctx)
+
+                    content_length = r.headers.get("Content-Length")
+
+                    if content_length and int(content_length) > MAX_VIDEO_SIZE:
+                        await self.handle_large_upload(
+                            ctx, url, spoilerwarning=spoilerwarning
+                        )
+                        return
+
+                    downloaded = 0
         
                     with open('output.mp4', 'wb') as f:
-                        for chunk in r.iter_content(chunk_size=8192):
-                            if chunk:
-                                f.write(chunk)
+                        for chunk in r.iter_content(chunk_size=64 * 1024):
+                            if not chunk:
+                                continue
+
+                            downloaded += len(chunk)
+
+                            if downloaded > MAX_VIDEO_SIZE:
+                                f.close()
+                                os.remove('output.mp4')
+
+                                await self.handle_large_upload(
+                                    ctx, url, spoilerwarning=spoilerwarning
+                                )
+                                return
+
+                            f.write(chunk)
                     await self.log('[DEBUG TRACE] video downloaded\n', ctx)
 
                 log_file_content = validate_file()
@@ -489,18 +516,20 @@ class MyClient(discord.Client):
 
         service = Service(executable_path=CHROME_DRIVER_PATH)
 
-        driver = create_driver(headers)
+        async with self.scrape_lock:
 
-        try:
-            if ('.tiktok.com/' in message.content or '.tt.site/' in message.content) and '/@' not in message.content:
-                await self.web_scrape(driver, message, headers, spoilerwarning)
-            if '.instagram.com/' in message.content:
-                await self.process_ig(driver, message, headers, spoilerwarning)
-        except Exception as e: 
-            if '.instagram.com/' in message.content:
-                # suppress error (experimental feature)
-                return
-            await self.log(f'[DEBUG TRACE] Standard error detected: {e}\n', message)
-            await self.handle_error(e, message)
-        finally:
-            driver.quit()
+            driver = create_driver(headers)
+
+            try:
+                if ('.tiktok.com/' in message.content or '.tt.site/' in message.content) and '/@' not in message.content:
+                    await self.web_scrape(driver, message, headers, spoilerwarning)
+                if '.instagram.com/' in message.content:
+                    await self.process_ig(driver, message, headers, spoilerwarning)
+            except Exception as e: 
+                if '.instagram.com/' in message.content:
+                    # suppress error (experimental feature)
+                    return
+                await self.log(f'[DEBUG TRACE] Standard error detected: {e}\n', message)
+                await self.handle_error(e, message)
+            finally:
+                driver.quit()
