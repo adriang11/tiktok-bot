@@ -10,7 +10,6 @@ import time
 import traceback
 import random
 import requests
-from bs4 import BeautifulSoup
 from discord import app_commands
 from discord import Member
 from dotenv import load_dotenv
@@ -313,50 +312,56 @@ class MyClient(discord.Client):
 
     async def find_video(self, driver, ctx):
         try:
-            await self.log('[DEBUG TRACE] Searching for video\n', ctx)
-            
-            await self.breakpoint("3 - Checking for Video:", driver, ctx)
+            await self.log('[DEBUG TRACE] Searching for TikTok metadata\n', ctx)
 
-            element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
-        
-            await self.log('[DEBUG TRACE] element found\n', ctx)
+            # Wait for the embedded JSON, not the video player. (The video element is unnecessary for extracting the CDN URL.)
+            raw_data = WebDriverWait(driver, 5).until(
+                lambda d: (
+                    d.find_element(
+                        By.ID,
+                        "__UNIVERSAL_DATA_FOR_REHYDRATION__"
+                    ).get_attribute("textContent") or None
+                )
+            )
 
-            await self.breakpoint("4 - Video element detected:", driver, ctx)
-            
-            s = driver.page_source
-            soup = BeautifulSoup(s, "html.parser")
-            script_tag = soup.find("script", id="__UNIVERSAL_DATA_FOR_REHYDRATION__")
-            if script_tag:
-                data = json.loads(script_tag.string)
-                await self.log('[DEBUG TRACE] script found\n', ctx)
+            # Parse only the embedded JSON instead of the entire page.
+            data = json.loads(raw_data)
+            del raw_data
 
-                format = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "Format"], data)
-                await self.log(f"[DEBUG TRACE] video format: {format}\n", ctx)
+            video_path = ["__DEFAULT_SCOPE__","webapp.video-detail","itemInfo","itemStruct","video",]
 
-                if format == "dash":
-                    # Dash format video, will have video/audio separate otherwise
-                    play_url = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "PlayAddrStruct", "UrlList", 0], data)
-                else:
-                    play_url = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 2], data)
+            video_data = get_in(video_path, data)
+            video_format = get_in(video_path + ["bitrateInfo", 0, "Format"], data)
 
-                await self.log(f"[DEBUG TRACE] CDN URL: {play_url}\n", ctx)
+            if not video_data:
+                await self.log('[DEBUG TRACE] No video metadata; checking slideshow\n',ctx)
+                return None
 
-                url = play_url
+            await self.log(f"[DEBUG TRACE] video format: {video_format}\n", ctx)
 
-                return url
+            if video_format == "dash":
+                play_url = get_in(video_path + ["PlayAddrStruct", "UrlList", 0],data)
+            else:
+                play_url = get_in(video_path + ["bitrateInfo", 0, "PlayAddr", "UrlList", 2],data)
 
-            return None
-        
+            # Release the parsed metadata before returning.
+            del data
+
+            if not play_url:
+                await self.log('[DEBUG TRACE] No playable URL found\n', ctx)
+                return None
+
+            await self.log(f"[DEBUG TRACE] CDN URL extracted\n", ctx)
+            return play_url
+
         except TimeoutException as e:
-            await self.breakpoint("4 - No video detected:", driver, ctx)
-
-            await self.log(f'[DEBUG TRACE] TimeoutException caught, Testing for slideshow: {e.msg}\n', ctx)
+            await self.log(f"[DEBUG TRACE] No TikTok metadata found; testing for slideshow: {e.msg}\n",ctx)
 
             photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
 
-            if photoscheck:  
+            if photoscheck:
                 await self.log('[DEBUG TRACE] Photos found\n', ctx)
-                return
+                return None
 
     async def web_scrape(self, driver, ctx, headers, spoilerwarning, *, userinput=None, override=False):
             await self.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n', ctx)

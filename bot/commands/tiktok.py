@@ -287,24 +287,34 @@ def register(client):
 
                     await client.breakpoint("4 - Video element detected:", driver, interaction)
                     
-                    s = driver.page_source
-                    soup = BeautifulSoup(s, "html.parser")
-                    script_tag = soup.find("script", id="__UNIVERSAL_DATA_FOR_REHYDRATION__")
-                    if script_tag:
-                        data = json.loads(script_tag.string)
-                        await client.log('[DEBUG TRACE] script found\n', interaction)
+                    script_tag = WebDriverWait(driver, 5).until(
+                        EC.presence_of_element_located(
+                            (By.ID, "__UNIVERSAL_DATA_FOR_REHYDRATION__")
+                        )
+                    )
 
-                        play_url1 = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 2], data)
-                        play_url2 = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 1], data)
-                        play_url3 = get_in(["__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct", "video", "bitrateInfo", 0, "PlayAddr", "UrlList", 0], data)
+                    raw_data = script_tag.get_attribute("textContent")
+                    data = json.loads(raw_data)
 
-                        await client.log(f'[DEBUG TRACE] CDN URL1: {play_url1}\n', interaction)
-                        await client.log(f'[DEBUG TRACE] CDN URL2: {play_url2}\n', interaction)
-                        await client.log(f'[DEBUG TRACE] CDN URL3: {play_url3}\n', interaction)
+                    video_path = [
+                        "__DEFAULT_SCOPE__",
+                        "webapp.video-detail",
+                        "itemInfo",
+                        "itemStruct",
+                        "video",
+                        "bitrateInfo",
+                        0,
+                        "PlayAddr",
+                        "UrlList",
+                    ]
 
-                        url1 = play_url1
-                        url2 = play_url2
-                        url3 = play_url3
+                    play_urls = get_in(video_path, data, [])
+                    url1 = play_urls[2] if len(play_urls) > 2 else None
+                    url2 = play_urls[1] if len(play_urls) > 1 else None
+                    url3 = play_urls[0] if play_urls else None
+
+                    del data, raw_data
+
                 
                 except TimeoutException as e:
                     await client.breakpoint("5 - After video check:", driver, interaction)
