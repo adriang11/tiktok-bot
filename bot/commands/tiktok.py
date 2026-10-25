@@ -516,6 +516,49 @@ def register(client):
                 except Exception as e:
                     await fail_audio(f"Audio download failed: {e}")
                     return
+
+                if url is None:
+                    driver.get(link)
+                    await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
+                    await interaction.channel.send(file=discord.File('audio.wav'))
+                    await client.log('[DEBUG TRACE] audio file sent\n', interaction)
+
+                else:
+                    r = requests.get(url, cookies=cookies, headers=headers)
+                    
+                    if os.path.exists('output.mp4'):
+                        os.remove('output.mp4')
+                        await client.log('[DEBUG TRACE] file removed\n', interaction)
+
+                    if r.status_code == 200:
+                        with open('output.mp4', 'wb') as f:
+                            f.write(r.content)
+                        await client.log('[DEBUG TRACE] video downloaded\n', interaction)
+
+                        log_file_content = validate_file()
+                        
+                        await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', interaction)
+                        if log_file_content == "":  
+                            await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                            await interaction.channel.send(file=discord.File('audio.wav'))
+                            await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
+                        else:
+                            try:
+                                await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
+                                await client.log('[DEBUG TRACE] file sent\n', interaction)
+                                client.lastlink = link
+                                await interaction.channel.send(file=discord.File('audio.wav'))
+                                await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
+                            except discord.HTTPException as e:
+                                if e.code == 40005:
+                                    await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                                    await interaction.channel.send(file=discord.File('audio.wav'))
+                                    await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
+                                else:
+                                    raise
+                    else:
+                        await client.log(f'[DEBUG TRACE] Failed to download video: {r.status_code}\n', interaction)
+                        await client.handle_error(r.status_code, interaction, link=link)
             except:
                 await client.log('[DEBUG TRACE] failed to get music\n', interaction)
                 await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
