@@ -386,6 +386,15 @@ def register(client):
         
         spoilerwarning = spoilered == "true"
 
+        async def fail_audio(reason):
+            await client.log(f"[DEBUG TRACE] Audio retrieval failed: {reason}\n",interaction)
+
+            # Replace the deferred response with the original link.
+            await interaction.edit_original_response(content=link)
+
+            # One private error message.
+            await interaction.followup.send("Failed to get audio...",ephemeral=True)
+
         async with client.scrape_lock:
             driver = create_driver(headers, block_images=True)
 
@@ -435,100 +444,81 @@ def register(client):
                 
                 await client.log(f'[DEBUG TRACE] Found username\n', interaction)
 
-                music=None
+                music = None
 
                 url = await client.find_video(driver, interaction)
 
                 all_cookies = driver.get_cookies()
-                cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
+                cookies = {c["name"]: c["value"] for c in all_cookies}
 
                 try:
-                    await client.log(f'[DEBUG TRACE] checking for audio\n', interaction)
-                    newlink = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a[aria-label*="Watch more videos with music"]'))).get_attribute('href')
-                    await client.log(f'[DEBUG TRACE] found video music disc\n', interaction)
+                    await client.log(
+                        "[DEBUG TRACE] Checking for audio\n", interaction
+                    )
+
+                    newlink = WebDriverWait(driver, 2).until(
+                        EC.presence_of_element_located((
+                            By.CSS_SELECTOR,
+                            'a[aria-label*="Watch more videos with music"]'
+                        ))
+                    ).get_attribute("href")
+
+                    if not newlink:
+                        raise ValueError("Music link has no href")
+
+                    await client.log(
+                        "[DEBUG TRACE] Found video music link\n", interaction
+                    )
+
                     driver.get(newlink)
-                    await client.log(f'[DEBUG TRACE] navigated to site\n', interaction)
-                    music = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "video"))).get_attribute('src')
-                    await client.log(f'[DEBUG TRACE] got music\n', interaction) 
-                except:
-                    await client.log(f'[DEBUG TRACE] failed to get music\n', interaction)
-                    await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
 
-                if url is not None:
-                    await client.log(f'[DEBUG TRACE] closing session\n', interaction)
-                    driver.quit()
-                    driver=None
+                    music = WebDriverWait(driver, 5).until(
+                        EC.presence_of_element_located((By.TAG_NAME, "video"))
+                    ).get_attribute("src")
 
-                if music: 
-                    try:
-                        s = requests.get(music, cookies=cookies, headers=headers)
+                    if not music or music.startswith("blob:"):
+                        raise ValueError(
+                            f"Music source is empty or a browser-only blob URL: {music}"
+                        )
 
-                        if os.path.exists('audio.wav'):
-                            os.remove('audio.wav')
-                            await client.log('[DEBUG TRACE] audio file removed\n', interaction)
+                    await client.log(
+                        "[DEBUG TRACE] Got audio URL\n", interaction
+                    )
 
-                        if s.status_code == 200:
-                            with open('audio.wav', 'wb') as f:
-                                f.write(s.content)
-                            await client.log('[DEBUG TRACE] audio downloaded\n', interaction)
-                        else:
-                            await client.log(f'[DEBUG TRACE] Failed to download audio: {s.status_code}\n', interaction)
-                            await client.handle_error(s.status_code, interaction, link=link)
-                    except OSError as e:
-                        if str(e).startswith('No connection adapters were found for'):
-                            await client.log(f'[DEBUG TRACE] Blob link detected:  No connection adapters were found for {music}\n', interaction)
-                            await client.generic_message(interaction, "Failed to get audio... (inaccessable file location)", ephemeral=True)
-                        else:
-                            raise
+                except Exception as e:
+                    await fail_audio(f"Could not extract audio URL: {e}")
+                    return
 
-                if url is None:
-                    driver.get(link)
-                    await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
-                    await interaction.channel.send(file=discord.File('audio.wav'))
-                    await client.log('[DEBUG TRACE] audio file sent\n', interaction)
+                try:
+                    if os.path.exists("audio.wav"):
+                        os.remove("audio.wav")
 
-                else:
-                    r = requests.get(url, cookies=cookies, headers=headers)
-                    
-                    if os.path.exists('output.mp4'):
-                        os.remove('output.mp4')
-                        await client.log('[DEBUG TRACE] file removed\n', interaction)
+                    s = requests.get(
+                        music,
+                        cookies=cookies,
+                        headers=headers,
+                        timeout=(5, 20)
+                    )
 
-                    if r.status_code == 200:
-                        with open('output.mp4', 'wb') as f:
-                            f.write(r.content)
-                        await client.log('[DEBUG TRACE] video downloaded\n', interaction)
+                    if s.status_code != 200 or not s.content:
+                        await fail_audio(
+                            f"Audio download returned HTTP {s.status_code}"
+                        )
+                        return
 
-                        log_file_content = validate_file()
-                        
-                        await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', interaction)
-                        if log_file_content == "":  
-                            await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
-                            await interaction.channel.send(file=discord.File('audio.wav'))
-                            await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
-                        else:
-                            try:
-                                await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
-                                await client.log('[DEBUG TRACE] file sent\n', interaction)
-                                client.lastlink = link
-                                await interaction.channel.send(file=discord.File('audio.wav'))
-                                await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
-                            except discord.HTTPException as e:
-                                if e.code == 40005:
-                                    await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
-                                    await interaction.channel.send(file=discord.File('audio.wav'))
-                                    await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
-                                else:
-                                    raise
-                    else:
-                        await client.log(f'[DEBUG TRACE] Failed to download video: {r.status_code}\n', interaction)
-                        await client.handle_error(r.status_code, interaction, link=link)
+                    with open("audio.wav", "wb") as f:
+                        f.write(s.content)
 
-            except Exception as e:
-                await client.handle_error(e, interaction, link=link)
-            finally:
-                await client.log(f'[DEBUG TRACE] closing session', interaction)
-                driver.quit()
+                    await client.log(
+                        "[DEBUG TRACE] Audio downloaded\n", interaction
+                    )
+
+                except Exception as e:
+                    await fail_audio(f"Audio download failed: {e}")
+                    return
+            except:
+                await client.log('[DEBUG TRACE] failed to get music\n', interaction)
+                await client.generic_message(interaction, "Failed to get audio...", ephemeral=True)
 
     @client.tree.command(name = "meow", description = "Send tiktok with description and audio")
     async def meow(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
