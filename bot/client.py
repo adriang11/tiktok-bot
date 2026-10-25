@@ -518,7 +518,7 @@ class MyClient(discord.Client):
 
         async with self.scrape_lock:
 
-            driver = create_driver(headers)
+            driver = create_driver(headers, block_images=True)
 
             try:
                 if ('.tiktok.com/' in message.content or '.tt.site/' in message.content) and '/@' not in message.content:
@@ -532,4 +532,8 @@ class MyClient(discord.Client):
                 await self.log(f'[DEBUG TRACE] Standard error detected: {e}\n', message)
                 await self.handle_error(e, message)
             finally:
-                driver.quit()
+                if driver is not None:
+                    try:
+                        driver.quit()
+                    except Exception as e:
+                        await self.log(f'[DEBUG TRACE] Chrome cleanup failed: {e}\n', message)

@@ -26,7 +26,7 @@ def register(client):
         spoilerwarning = spoilered == "true"
 
         async with client.scrape_lock:
-            driver = create_driver(headers)
+            driver = create_driver(headers, block_images=True)
 
             try:
                 await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link)
@@ -48,7 +48,7 @@ def register(client):
         spoilerwarning = spoilered == "true"
 
         async with client.scrape_lock:
-            driver = create_driver(headers)
+            driver = create_driver(headers, block_images=True)
 
             try:
                 await client.web_scrape(driver, interaction, headers, spoilerwarning, userinput=link, override=True)
@@ -66,7 +66,7 @@ def register(client):
         spoilerwarning = spoilered == "true"
 
         async with client.scrape_lock:
-            driver = create_driver(headers)
+            driver = create_driver(headers, block_images=True)
 
             try:
                 await client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n', interaction)
@@ -202,7 +202,7 @@ def register(client):
         spoilerwarning = spoilered == "true"
 
         async with client.scrape_lock:
-            driver = create_driver(headers)
+            driver = create_driver(headers, block_images=True)
 
             try:
                 await client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n', interaction)
@@ -377,7 +377,7 @@ def register(client):
         spoilerwarning = spoilered == "true"
 
         async with client.scrape_lock:
-            driver = create_driver(headers)
+            driver = create_driver(headers, block_images=True)
 
             try:
                 await client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n', interaction)
@@ -528,7 +528,7 @@ def register(client):
 
         async with client.scrape_lock:
 
-            driver = create_driver(headers)
+            driver = create_driver(headers, block_images=True)
 
             try:
                 await client.log(f'[DEBUG TRACE] Jarvis, initiate TikTok protocol\n', interaction)
