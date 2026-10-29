@@ -49,27 +49,6 @@ def register(client):
         await client.log(f'Wisdom sent: {wisdom}\n', interaction)
         await interaction.response.send_message(wisdom)
 
-    @client.tree.command(name = "toggle", description = "Toggle acronym troll on/off") 
-    async def toggle(interaction: discord.Interaction):
-        tog = await client.toggler('acronym')
-        response = "Acronym Help Mode set to " + str(tog)
-        await interaction.response.send_message(response)
-
-    @client.tree.command(name = "debug", description = "Toggle debug mode on/off") 
-    async def debug(interaction: discord.Interaction):
-        if interaction.user.id != 474713843181027328:
-            await interaction.response.send_message("You are not Adrian.", ephemeral=True)
-            return
-
-        tog = await client.toggler('debug')
-        response = "Debug Mode set to " + str(tog)
-        await interaction.response.send_message(response)
-
-    @client.tree.command(name = "clearlast", description = "Clear the last saved tiktok link") 
-    async def clear_last(interaction: discord.Interaction):
-        client.lastlink = ""
-        await interaction.response.send_message("Last link cleared",ephemeral=True)
-
     @client.tree.command(name = "poll", description = "Creates a poll") 
     async def poll(interaction: discord.Interaction, message: str, choice1: str, choice2: str, choice3: Optional[str], choice4: Optional[str], choice5: Optional[str], choice6: Optional[str], choice7: Optional[str], choice8: Optional[str], choice9: Optional[str], choice10: Optional[str]):
         

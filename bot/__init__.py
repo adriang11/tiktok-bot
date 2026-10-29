@@ -1,5 +1,6 @@
 import discord
 from .client import MyClient
+from .commands.admin import register as register_admin
 from .commands.misc import register as register_misc
 from .commands.tiktok import register as register_tiktok
 
@@ -8,6 +9,7 @@ def create_client():
     intents.message_content = True
     client = MyClient(intents=intents)
 
+    register_admin(client)
     register_misc(client)
     register_tiktok(client)
 
