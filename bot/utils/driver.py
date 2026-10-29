@@ -28,4 +28,25 @@ def create_driver(headers, *, block_images=False):
 
         driver = webdriver.Chrome(options=options)
         driver.set_page_load_timeout(25)
+        driver.execute_cdp_cmd("Network.enable", {})
+
+        driver.execute_cdp_cmd(
+        "Network.setBlockedURLs",
+        {
+                "urls": [
+                "*.jpg",
+                "*.jpeg",
+                "*.png",
+                "*.webp",
+                "*.gif",
+                "*.woff",
+                "*.woff2",
+                "*.ttf",
+                "*.mp4",
+                "*.webm",
+                "*.m3u8",
+                ]
+        },
+        )
+
         return driver

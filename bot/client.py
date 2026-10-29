@@ -290,7 +290,7 @@ class MyClient(discord.Client):
 
             for i, part in enumerate(parts[:-1]):
                 if part.startswith("@") and len(part) > 1:
-                    if parts[i + 1] == "video":
+                    if parts[i + 1]  in ("video", "photo"):
                         username = part[1:]
 
                         await self.log(f"[DEBUG TRACE] Username lookup: found @{username} from {source} (URL={candidate!r})\n", ctx)
