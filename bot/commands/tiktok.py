@@ -9,6 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import StaleElementReferenceException
 from bot import client
 from bot.data.statics import headers
 from bot.data.statics import no_free_views
@@ -35,7 +36,11 @@ def register(client):
                 await client.handle_error(e, interaction, link=link)
             finally:
                 await client.log(f'[DEBUG TRACE] closing session', interaction)
-                driver.quit()
+                if driver is not None:
+                    try:
+                        driver.quit()
+                    except Exception as e:
+                        await client.log(f'[DEBUG TRACE] Error closing session: {e}\n',interaction)
 
     @client.tree.command(name = "override", description = "Send tiktok overriding no free views")
     async def override(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
@@ -57,7 +62,11 @@ def register(client):
                 await client.handle_error(e, interaction, link=link)
             finally:
                 await client.log(f'[DEBUG TRACE] closing session', interaction)
-                driver.quit()
+                if driver is not None:
+                    try:
+                        driver.quit()
+                    except Exception as e:
+                        await client.log(f'[DEBUG TRACE] Error closing session: {e}\n',interaction)
 
     @client.tree.command(name = "withcaption", description = "Send tiktok with description")
     async def with_caption(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
@@ -75,7 +84,7 @@ def register(client):
 
                 lst = link.split(' ')
                 for word in lst:
-                    if '.tiktok.com/' in word:
+                    if '.tiktok.com/' in word or '.tt.site/' in word:
                         if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
                         link = word.strip('||')
 
@@ -99,13 +108,16 @@ def register(client):
 
                 await client.breakpoint("1 - After Pre-checks:", driver, interaction)
 
-                user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
-                url = user.get_attribute("content")
-                lst = url.split('/')
-
-                for word in lst:
-                    if word.startswith("@"):
-                        username = word
+                username = await client.get_tiktok_username(driver, interaction)
+                
+                if username is None:
+                    await client.log(f"[DEBUG TRACE] Could not determine posting username. URL={driver.current_url!r}\n", interaction)
+        
+                    #raise RuntimeError("Unable to determine TikTok posting account")
+                    username = "Unknown"
+        
+                await client.log(f"[DEBUG TRACE] Posting account: @{username}\n", interaction)
+                
                 if username in no_free_views:
                     await interaction.followup.send(link)
                     await interaction.followup.send("No free views", ephemeral=True)
@@ -211,7 +223,7 @@ def register(client):
 
                 lst = link.split(' ')
                 for word in lst:
-                    if '.tiktok.com/' in word:
+                    if '.tiktok.com/' in word or '.tt.site/' in word:
                         if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
                         link = word.strip('||')
 
@@ -235,13 +247,15 @@ def register(client):
 
                 await client.breakpoint("1 - After Pre-checks:", driver, interaction)
 
-                user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
-                url = user.get_attribute("content")
-                lst = url.split('/')
-
-                for word in lst:
-                    if word.startswith("@"):
-                        username = word
+                username = await client.get_tiktok_username(driver, interaction)
+                                
+                if username is None:
+                    await client.log(f"[DEBUG TRACE] Could not determine posting username. URL={driver.current_url!r}\n", interaction)
+        
+                    #raise RuntimeError("Unable to determine TikTok posting account")
+                    username = "Unknown"
+        
+                await client.log(f"[DEBUG TRACE] Posting account: @{username}\n", interaction)
                 if username in no_free_views:
                     await interaction.followup.send(link)
                     await interaction.followup.send("No free views", ephemeral=True)
@@ -378,7 +392,11 @@ def register(client):
                 await client.handle_error(e, interaction, link=link)
             finally:
                 await client.log(f'[DEBUG TRACE] closing session', interaction)
-                driver.quit()
+                if driver is not None:
+                    try:
+                        driver.quit()
+                    except Exception as e:
+                        await client.log(f'[DEBUG TRACE] Error closing session: {e}\n',interaction)
 
     @client.tree.command(name = "withaudio", description = "Send tiktok with audio")
     async def with_audio(interaction: discord.Interaction, link: str, spoilered: Literal["true", "false"] = "false"):
@@ -405,7 +423,7 @@ def register(client):
 
                 lst = link.split(' ')
                 for word in lst:
-                    if '.tiktok.com/' in word:
+                    if '.tiktok.com/' in word or '.tt.site/' in word:
                         if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
                         link = word.strip('||')
 
@@ -429,14 +447,15 @@ def register(client):
 
                 await client.breakpoint("1 - After Pre-checks:", driver, interaction)
 
-                user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
-
-                url = user.get_attribute("content")
-                lst = url.split('/')
-
-                for word in lst:
-                    if word.startswith("@"):
-                        username = word
+                username = await client.get_tiktok_username(driver, interaction)
+                                
+                if username is None:
+                    await client.log(f"[DEBUG TRACE] Could not determine posting username. URL={driver.current_url!r}\n", interaction)
+        
+                    #raise RuntimeError("Unable to determine TikTok posting account")
+                    username = "Unknown"
+        
+                await client.log(f"[DEBUG TRACE] Posting account: @{username}\n", interaction)
                 if username in no_free_views:
                     await interaction.followup.send(link)
                     await interaction.followup.send("No free views", ephemeral=True)
@@ -452,38 +471,37 @@ def register(client):
                 cookies = {c["name"]: c["value"] for c in all_cookies}
 
                 try:
-                    await client.log(
-                        "[DEBUG TRACE] Checking for audio\n", interaction
-                    )
+                    await client.log("[DEBUG TRACE] Checking for audio\n", interaction)
 
-                    newlink = WebDriverWait(driver, 2).until(
-                        EC.presence_of_element_located((
-                            By.CSS_SELECTOR,
-                            'a[aria-label*="Watch more videos with music"]'
-                        ))
-                    ).get_attribute("href")
+                    # Read the music link directly from the DOM.
+                    newlink = WebDriverWait(driver, 5).until(
+                        lambda d: d.execute_script("""
+                            const link = document.querySelector(
+                                'a[aria-label*="Watch more videos with music"]'
+                            );
+                            return link ? link.href : null;
+                        """)
+                    )
 
                     if not newlink:
                         raise ValueError("Music link has no href")
 
-                    await client.log(
-                        "[DEBUG TRACE] Found video music link\n", interaction
-                    )
+                    await client.log("[DEBUG TRACE] Found video music link\n", interaction)
 
                     driver.get(newlink)
 
-                    music = WebDriverWait(driver, 5).until(
-                        EC.presence_of_element_located((By.TAG_NAME, "video"))
-                    ).get_attribute("src")
+                    # Retry locating the video if TikTok replaces the DOM element.
+                    music = WebDriverWait(driver,10,ignored_exceptions=[StaleElementReferenceException]).until(
+                        lambda d: d.execute_script("""
+                            const video = document.querySelector("video");
+                            return video ? video.getAttribute("src") : null;
+                        """)
+                    )
 
                     if not music or music.startswith("blob:"):
-                        raise ValueError(
-                            f"Music source is empty or a browser-only blob URL: {music}"
-                        )
+                        raise ValueError(f"Music source is empty or browser-only: {music}")
 
-                    await client.log(
-                        "[DEBUG TRACE] Got audio URL\n", interaction
-                    )
+                    await client.log("[DEBUG TRACE] Got audio URL\n",interaction)
 
                 except Exception as e:
                     await fail_audio(f"Could not extract audio URL: {e}")
@@ -580,7 +598,7 @@ def register(client):
 
                 lst = link.split(' ')
                 for word in lst:
-                    if '.tiktok.com/' in word:
+                    if '.tiktok.com/' in word or '.tt.site/' in word:
                         if word.startswith("||") and word.endswith("||"): spoilerwarning = True #foolproofing
                         link = word.strip('||')
 
@@ -604,14 +622,15 @@ def register(client):
 
                 await client.breakpoint("1 - After Pre-checks:", driver, interaction)
 
-                user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
-
-                url = user.get_attribute("content")
-                lst = url.split('/')
-
-                for word in lst:
-                    if word.startswith("@"):
-                        username = word
+                username = await client.get_tiktok_username(driver, interaction)
+                                
+                if username is None:
+                    await client.log(f"[DEBUG TRACE] Could not determine posting username. URL={driver.current_url!r}\n", interaction)
+        
+                    #raise RuntimeError("Unable to determine TikTok posting account")
+                    username = "Unknown"
+        
+                await client.log(f"[DEBUG TRACE] Posting account: @{username}\n", interaction)
                 if username in no_free_views:
                     await interaction.followup.send(link)
                     await interaction.followup.send("No free views", ephemeral=True)
@@ -739,4 +758,8 @@ def register(client):
                 await client.handle_error(e, interaction, link=link)
             finally:
                 await client.log(f'[DEBUG TRACE] closing session', interaction)
-                driver.quit()
+                if driver is not None:
+                    try:
+                        driver.quit()
+                    except Exception as e:
+                        await client.log(f'[DEBUG TRACE] Error closing session: {e}\n',interaction)

@@ -25,6 +25,7 @@ from selenium.common.exceptions import InvalidArgumentException
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import WebDriverException
 from bot.data.statics import acronym_list
 from bot.data.statics import no_free_views
 from bot.data.statics import headers
@@ -36,6 +37,7 @@ from typing import Optional
 from typing import Literal
 import pyshorteners
 from .config import *
+from urllib.parse import urlparse
 
 class MyClient(discord.Client):
     def __init__(self, *, intents: discord.Intents):
@@ -241,6 +243,65 @@ class MyClient(discord.Client):
             await ctx.followup.send('<' + link + '>')
             await ctx.channel.send(file=discord.File('output.mp4', spoiler=spoilerwarning))
 
+    async def get_tiktok_username(self, driver, ctx):
+        """Return the posting username, or None if it cannot be determined."""
+
+        candidates = []
+
+        # Read the redirected URL.
+        try:
+            candidates.append(("driver.current_url", driver.current_url))
+        except WebDriverException as e:
+            await self.log(f"[DEBUG TRACE] Failed to read current URL: {e}\n", ctx)
+
+        # Read relevant metadata without copying the full page source.
+        try:
+            metadata = driver.execute_script("""
+                const getMeta = (selector) =>
+                    document.querySelector(selector)?.content || "";
+
+                return {
+                    ogUrl: getMeta('meta[property="og:url"]'),
+                    canonical: document.querySelector(
+                        'link[rel="canonical"]'
+                    )?.href || ""
+                };
+            """)
+
+            candidates.insert(0, ("og:url", metadata.get("ogUrl", "")))
+            candidates.insert(1, ("canonical", metadata.get("canonical", "")))
+
+        except WebDriverException as e:
+            await self.log(f"[DEBUG TRACE] Failed to retrieve URL metadata: {e}\n", ctx)
+
+        # Try each candidate in priority order.
+        for source, candidate in candidates:
+            if not candidate:
+                await self.log(f"[DEBUG TRACE] Username lookup: {source} is empty\n", ctx)
+                continue
+
+            try:
+                path = urlparse(candidate).path
+            except ValueError as e:
+                await self.log(f"[DEBUG TRACE] Username lookup: invalid URL from {source}: {candidate!r} ({e})\n", ctx)
+                continue
+
+            parts = path.split("/")
+
+            for i, part in enumerate(parts[:-1]):
+                if part.startswith("@") and len(part) > 1:
+                    if parts[i + 1] == "video":
+                        username = part[1:]
+
+                        await self.log(f"[DEBUG TRACE] Username lookup: found @{username} from {source} (URL={candidate!r})\n", ctx)
+                        return username
+
+            await self.log(f"[DEBUG TRACE] Username lookup: no username found in {source} (URL={candidate!r})\n", ctx)
+
+        await self.log("[DEBUG TRACE] Username lookup: no candidate contained a recognizable TikTok username\n", ctx)
+
+        return None
+
     async def run_prechecks(self, driver, ctx, spoilerwarning, *, userinput=None, override=False):
         if isinstance(ctx, discord.Message):
             link = ctx.content
@@ -290,23 +351,25 @@ class MyClient(discord.Client):
 
         await self.breakpoint("1 - After Pre-checks:", driver, ctx)
 
-        if not override:
-            user = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "/html/head/meta[@property='og:url']")))
-            url = user.get_attribute("content")
-            lst = url.split('/')
+        username = await self.get_tiktok_username(driver, ctx)
+
+        if username is None:
+            await self.log(f"[DEBUG TRACE] Could not determine posting username. URL={driver.current_url!r}\n", ctx)
+
+            #raise RuntimeError("Unable to determine TikTok posting account")
+            username = "Unknown"
+
+        await self.log(f"[DEBUG TRACE] Posting account: @{username}\n", ctx)
+
+        if username in no_free_views:
+            if isinstance(ctx, discord.Message):
+                await ctx.reply("No free views")
+            elif isinstance(ctx, discord.Interaction):
+                await ctx.followup.send(link)
+                await ctx.followup.send("No free views", ephemeral=True)
+            return
             
-            for word in lst:
-                if word.startswith("@"):
-                    username = word
-            if username in no_free_views:
-                if isinstance(ctx, discord.Message):
-                    await ctx.reply("No free views")
-                elif isinstance(ctx, discord.Interaction):
-                    await ctx.followup.send(link)
-                    await ctx.followup.send("No free views", ephemeral=True)
-                return
-            
-            await self.log(f'[DEBUG TRACE] View stealing protected\n', ctx)
+        await self.log(f'[DEBUG TRACE] View stealing protected\n', ctx)
 
         return link
 
@@ -541,4 +604,4 @@ class MyClient(discord.Client):
                     try:
                         driver.quit()
                     except Exception as e:
-                        await self.log(f'[DEBUG TRACE] Chrome cleanup failed: {e}\n', message)
+                        await self.log(f'[DEBUG TRACE] Error closing session: {e}\n', message)
