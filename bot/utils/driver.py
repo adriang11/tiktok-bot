@@ -16,12 +16,10 @@ def create_driver(headers, *, block_images=False):
         options.add_argument("--disable-background-timer-throttling")
         options.add_argument("--disable-renderer-backgrounding")
 
-        options.page_load_strategy = "eager"
+        # options.page_load_strategy = "eager"
 
         if block_images:
-                prefs = {
-                "profile.managed_default_content_settings.images": 2
-                }
+                prefs = {"profile.managed_default_content_settings.images": 2}
                 options.add_experimental_option("prefs", prefs)
 
         options.add_argument(f"user-agent={headers['User-Agent']}")
