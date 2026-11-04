@@ -586,7 +586,7 @@ class MyClient(discord.Client):
 
         async with self.scrape_lock:
 
-            driver = create_driver(headers, block_images=True)
+            driver = create_driver(headers, block_images=False)
 
             try:
                 if ('.tiktok.com/' in message.content or '.tt.site/' in message.content) and '/@' not in message.content:
