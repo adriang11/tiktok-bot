@@ -513,6 +513,32 @@ class MyClient(discord.Client):
 
                 await self.breakpoint("5 - slideshow 1:", driver, ctx)
 
+                debug_state = driver.execute_script("""
+                    const script = document.getElementById(
+                        "__UNIVERSAL_DATA_FOR_REHYDRATION__"
+                    );
+
+                    return {
+                        readyState: document.readyState,
+                        url: location.href,
+                        title: document.title,
+                        bodyText: document.body.innerText.substring(0, 500),
+                        universalDataLength: script
+                            ? script.textContent.length
+                            : null,
+                        swiperCount: document.querySelectorAll(
+                            ".swiper-wrapper"
+                        ).length,
+                        videoCount: document.querySelectorAll("video").length,
+                        imageCount: document.querySelectorAll("img").length
+                    };
+                """)
+
+                await self.log(
+                    f"[DEBUG TRACE] TikTok page state: {debug_state}\\n",
+                    ctx
+                )
+
                 wrapper = WebDriverWait(driver, 10, 0.5, (StaleElementReferenceException)).until(EC.presence_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
                 await self.log(f'[DEBUG TRACE] wrapper found\n', ctx)
                 divs = WebDriverWait(wrapper, 10, 0.5, (StaleElementReferenceException)).until(lambda x: x.find_elements(By.TAG_NAME, 'div'))
