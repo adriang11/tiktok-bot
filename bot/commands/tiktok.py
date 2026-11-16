@@ -295,9 +295,9 @@ def register(client):
                     return
 
 
-                async def find_video_candidates(self, driver, ctx):
+                async def find_video_candidates(client, driver, ctx):
                     try:
-                        await self.log(
+                        await client.log(
                             '[DEBUG TRACE] Searching for video CDN candidates\n', ctx
                         )
 
@@ -324,7 +324,7 @@ def register(client):
                         )
 
                         if not isinstance(item_struct, dict):
-                            await self.log(
+                            await client.log(
                                 '[DEBUG TRACE] itemStruct missing\n', ctx
                             )
                             return None
@@ -332,7 +332,7 @@ def register(client):
                         video_data = item_struct.get("video")
 
                         if not isinstance(video_data, dict):
-                            await self.log(
+                            await client.log(
                                 '[DEBUG TRACE] No video metadata found\n', ctx
                             )
                             return None
@@ -342,7 +342,7 @@ def register(client):
                             item_struct
                         )
 
-                        await self.log(
+                        await client.log(
                             f'[DEBUG TRACE] Video format: {video_format}\n', ctx
                         )
 
@@ -380,18 +380,18 @@ def register(client):
                         candidates = candidates[:3]
 
                         if not candidates:
-                            await self.log(
+                            await client.log(
                                 '[DEBUG TRACE] No CDN candidates extracted\n', ctx
                             )
                             return None
 
-                        await self.log(
+                        await client.log(
                             f'[DEBUG TRACE] Extracted {len(candidates)} CDN candidates\n',
                             ctx
                         )
 
                         for i, url in enumerate(candidates, 1):
-                            await self.log(
+                            await client.log(
                                 f'[DEBUG TRACE] Candidate {i}: {url[:150]}...\n',
                                 ctx
                             )
@@ -402,20 +402,20 @@ def register(client):
                         }
 
                     except TimeoutException as e:
-                        await self.log(
+                        await client.log(
                             f'[DEBUG TRACE] No TikTok metadata found: {e.msg}\n', ctx
                         )
                         return None
 
                     except (json.JSONDecodeError, TypeError, ValueError) as e:
-                        await self.log(
+                        await client.log(
                             f'[DEBUG TRACE] Metadata parsing failed: {e}\n', ctx
                         )
                         return None
 
                 
                 video_data = await find_video_candidates(
-                    driver, interaction
+                    client, driver, interaction
                 )
 
                 if not video_data:

@@ -6,7 +6,6 @@ def create_driver(headers, *, block_images=False):
         # Required for Heroku
         options.add_argument("--headless=new")
         options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
 
         # Reduce unnecessary Chrome activity

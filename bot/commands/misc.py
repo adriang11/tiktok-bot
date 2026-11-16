@@ -187,9 +187,11 @@ def register(client):
         embed.add_field(
             name="⚠️ Known Issues",
             value=(
-                "• TikTok photo/slideshow posts may fail to load correctly.\n"
-                "• TikTok `/withaudio` may occasionally fail to retrieve audio.\n"
-                "• Less common: video posts may time out and crash the bot (no response from /sugma).\n"
+                "• TikTok photo/slideshow posts not working.\n"
+                "• TikTok `/withaudio` not working for the same reason.\n"
+                "• TikTok `/meow` not working bc /withaudio isn't working.\n"
+                "• Less common: video posts may time out and crash the bot (no response from slash commands). In such cases, you won't get a response/error message unfortunately. Requests will never take longer than 2 minutes, so if it's been more than 2 minutes you can just give up\n"
+                "\n"
             ),
             inline=False
         )
@@ -199,6 +201,7 @@ def register(client):
             value=(
                 "• Improving TikTok photo/slideshow detection and image retrieval.\n"
                 "• Investigating audio extraction issues with TikTok posts.\n"
+                "\n"
             ),
             inline=False
         )
@@ -206,8 +209,11 @@ def register(client):
         embed.add_field(
             name="✅ Recently Fixed",
             value=(
-                "• Fixed TikTok username detection for video links.\n"
-                "• Restored reliable TikTok video downloading.\n"
+                "• You now no longer have to wait for one tiktok to send before sending another request.\n"
+                "• IG slideshows now send with associated username + caption.\n"
+                "• Improved /withcaption reliability.\n"
+                "• Fixed a bug where large video uploads (sent with chungus.s.gy links) replaced the original tiktok link in slash commands.\n"
+                "\n"
             ),
             inline=False
         )
