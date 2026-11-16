@@ -179,7 +179,7 @@ def register(client):
             title="🤖 Bot Status & Known Issues",
             description=(
                 "Here's the current development status of the bot. "
-                "This will be updated as issues are identified and resolved."
+                "This will be updated as issues are identified and resolved.\n\n"
             ),
             color=discord.Color.blue()
         )
@@ -188,10 +188,9 @@ def register(client):
             name="⚠️ Known Issues",
             value=(
                 "• TikTok photo/slideshow posts not working.\n"
-                "• TikTok `/withaudio` not working for the same reason.\n"
-                "• TikTok `/meow` not working bc /withaudio isn't working.\n"
-                "• Less common: video posts may time out and crash the bot (no response from slash commands). In such cases, you won't get a response/error message unfortunately. Requests will never take longer than 2 minutes, so if it's been more than 2 minutes you can just give up\n"
-                "\n"
+                "• `/withaudio` not working for the same reason.\n"
+                "• `/meow` not working bc `/withaudio` isn't working.\n"
+                "• Less common: video posts may time out and crash the bot (no response from slash commands). In such cases, you won't get a response/error message unfortunately. Requests will never take longer than 2 minutes, so if it's been more than 2 minutes you can just give up\n\n\n"
             ),
             inline=False
         )
@@ -200,8 +199,7 @@ def register(client):
             name="🔧 Currently Working On",
             value=(
                 "• Improving TikTok photo/slideshow detection and image retrieval.\n"
-                "• Investigating audio extraction issues with TikTok posts.\n"
-                "\n"
+                "• Investigating audio extraction issues with TikTok posts.\n\n\n"
             ),
             inline=False
         )
@@ -211,9 +209,8 @@ def register(client):
             value=(
                 "• You now no longer have to wait for one tiktok to send before sending another request.\n"
                 "• IG slideshows now send with associated username + caption.\n"
-                "• Improved /withcaption reliability.\n"
-                "• Fixed a bug where large video uploads (sent with chungus.s.gy links) replaced the original tiktok link in slash commands.\n"
-                "\n"
+                "• Improved `/withcaption` reliability.\n"
+                "• Fixed a bug where large video uploads (sent with chungus.s.gy links) replaced the original tiktok link in slash commands.\n\n\n"
             ),
             inline=False
         )
