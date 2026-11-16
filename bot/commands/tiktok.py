@@ -152,13 +152,17 @@ def register(client):
                     await interaction.channel.send(fulldesc)
                     return
 
-                url = await client.find_video(driver, interaction)
+                video_data = await client.find_video(driver, interaction)
 
-                if url is None:
+                if video_data is None:
+                    await client.log('[DEBUG TRACE] No video found. Processing slideshow\n', interaction)
+
                     await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
                     if header: await interaction.channel.send(header)
                     await interaction.channel.send(fulldesc)
                 else:
+                    video_url = video_data["url"]
+                    
                     all_cookies = driver.get_cookies()
                     cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
 
@@ -166,7 +170,7 @@ def register(client):
                     driver.quit()
                     driver =None
 
-                    r = requests.get(url, cookies=cookies, headers=headers)
+                    r = requests.get(video_url, cookies=cookies, headers=headers)
                     
                     if os.path.exists('output.mp4'):
                         os.remove('output.mp4')
@@ -181,7 +185,7 @@ def register(client):
                         
                         await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', interaction)
                         if log_file_content == "":  
-                            await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                            await client.handle_large_upload(interaction, video_url, link, spoilerwarning=spoilerwarning)
                             if header: await interaction.channel.send(header)
                             await interaction.channel.send(fulldesc)
                         else:
@@ -193,7 +197,7 @@ def register(client):
                                 client.lastlink = link
                             except discord.HTTPException as e:
                                 if e.code == 40005:
-                                    await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                                    await client.handle_large_upload(interaction, video_url, link, spoilerwarning=spoilerwarning)
                                     if header: await interaction.channel.send(header)
                                     await interaction.channel.send(fulldesc)
                                 else:
@@ -290,104 +294,157 @@ def register(client):
                     await interaction.channel.send(fulldesc)
                     return
 
-                try:
-                    await client.log('[DEBUG TRACE] Searching for video\n', interaction)
-                    
-                    await client.breakpoint("3 - After Photos Check (No Slideshow Detected):", driver, interaction)
 
-                    element = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, 'video')))
-                
-                    await client.log('[DEBUG TRACE] element found\n', interaction)
-
-                    await client.breakpoint("4 - Video element detected:", driver, interaction)
-                    
-                    script_tag = WebDriverWait(driver, 5).until(
-                        EC.presence_of_element_located(
-                            (By.ID, "__UNIVERSAL_DATA_FOR_REHYDRATION__")
+                async def find_video_candidates(self, driver, ctx):
+                    try:
+                        await self.log(
+                            '[DEBUG TRACE] Searching for video CDN candidates\n', ctx
                         )
+
+                        raw_data = WebDriverWait(driver, 5).until(
+                            lambda d: (
+                                d.find_element(
+                                    By.ID,
+                                    "__UNIVERSAL_DATA_FOR_REHYDRATION__"
+                                ).get_attribute("textContent") or None
+                            )
+                        )
+
+                        data = json.loads(raw_data)
+                        del raw_data
+
+                        item_struct = get_in(
+                            [
+                                "__DEFAULT_SCOPE__",
+                                "webapp.video-detail",
+                                "itemInfo",
+                                "itemStruct"
+                            ],
+                            data
+                        )
+
+                        if not isinstance(item_struct, dict):
+                            await self.log(
+                                '[DEBUG TRACE] itemStruct missing\n', ctx
+                            )
+                            return None
+
+                        video_data = item_struct.get("video")
+
+                        if not isinstance(video_data, dict):
+                            await self.log(
+                                '[DEBUG TRACE] No video metadata found\n', ctx
+                            )
+                            return None
+
+                        video_format = get_in(
+                            ["video", "bitrateInfo", 0, "Format"],
+                            item_struct
+                        )
+
+                        await self.log(
+                            f'[DEBUG TRACE] Video format: {video_format}\n', ctx
+                        )
+
+                        if video_format == "dash":
+                            play_urls = get_in(
+                                ["video", "PlayAddrStruct", "UrlList"],
+                                item_struct,
+                                []
+                            )
+                        else:
+                            play_urls = get_in(
+                                [
+                                    "video",
+                                    "bitrateInfo",
+                                    0,
+                                    "PlayAddr",
+                                    "UrlList"
+                                ],
+                                item_struct,
+                                []
+                            )
+
+                        if not isinstance(play_urls, list):
+                            play_urls = []
+
+                        # TikTok commonly returns URLs in descending preference order.
+                        # Reverse to retain the original candice behavior:
+                        # index 2, then 1, then 0.
+                        candidates = []
+
+                        for url in reversed(play_urls):
+                            if isinstance(url, str) and url and url not in candidates:
+                                candidates.append(url)
+
+                        candidates = candidates[:3]
+
+                        if not candidates:
+                            await self.log(
+                                '[DEBUG TRACE] No CDN candidates extracted\n', ctx
+                            )
+                            return None
+
+                        await self.log(
+                            f'[DEBUG TRACE] Extracted {len(candidates)} CDN candidates\n',
+                            ctx
+                        )
+
+                        for i, url in enumerate(candidates, 1):
+                            await self.log(
+                                f'[DEBUG TRACE] Candidate {i}: {url[:150]}...\n',
+                                ctx
+                            )
+
+                        return {
+                            "type": "video",
+                            "urls": candidates
+                        }
+
+                    except TimeoutException as e:
+                        await self.log(
+                            f'[DEBUG TRACE] No TikTok metadata found: {e.msg}\n', ctx
+                        )
+                        return None
+
+                    except (json.JSONDecodeError, TypeError, ValueError) as e:
+                        await self.log(
+                            f'[DEBUG TRACE] Metadata parsing failed: {e}\n', ctx
+                        )
+                        return None
+
+                
+                video_data = await find_video_candidates(
+                    driver, interaction
+                )
+
+                if not video_data:
+                    await client.log(
+                        '[DEBUG TRACE] No video candidates found\n',
+                        interaction
                     )
 
-                    raw_data = script_tag.get_attribute("textContent")
-                    data = json.loads(raw_data)
+                    await interaction.followup.send(
+                        "No video CDN candidates found. "
+                        "This may be a slideshow or unsupported video."
+                    )
+                    return
 
-                    video_path = [
-                        "__DEFAULT_SCOPE__",
-                        "webapp.video-detail",
-                        "itemInfo",
-                        "itemStruct",
-                        "video",
-                        "bitrateInfo",
-                        0,
-                        "PlayAddr",
-                        "UrlList",
-                    ]
+                candidates = video_data["urls"]
 
-                    play_urls = get_in(video_path, data, [])
-                    url1 = play_urls[2] if len(play_urls) > 2 else None
-                    url2 = play_urls[1] if len(play_urls) > 1 else None
-                    url3 = play_urls[0] if play_urls else None
+                await client.log(
+                    f'[DEBUG TRACE] Sending {len(candidates)} CDN candidates\n',
+                    interaction
+                )
 
-                    del data, raw_data
+                # Send URLs as masked Discord hyperlinks
+                message = "\n".join(
+                    f"[CDN Candidate {i}](<{url}>)"
+                    for i, url in enumerate(candidates, 1)
+                )
 
-                
-                except TimeoutException as e:
-                    await client.breakpoint("5 - After video check:", driver, interaction)
+                await interaction.followup.send(message)
 
-                    await client.log(f'[DEBUG TRACE] TimeoutException caught, Testing for slideshow: {e}\n', interaction)
-
-                    photoscheck = WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.CLASS_NAME, "swiper-wrapper")))
-
-                    if photoscheck:  
-                        await client.log('[DEBUG TRACE] Photos found\n', interaction)
-                        return
-
-                for url in [url1,url2,url3]:
-                    if url is None:
-                        await client.process_slideshow(driver, interaction, headers, spoilerwarning, userinput=link)
-                        if header: await interaction.channel.send(header)
-                        await interaction.channel.send(fulldesc)
-                    else:
-
-                        all_cookies = driver.get_cookies()
-                        cookies = {cookies['name']:cookies['value'] for cookies in all_cookies}
-
-                        await client.log(f'[DEBUG TRACE] closing session\n', interaction)
-                        driver.quit()
-                        driver =None
-
-                        r = requests.get(url, cookies=cookies, headers=headers)
-                        
-                        if os.path.exists('output.mp4'):
-                            os.remove('output.mp4')
-                            await client.log('[DEBUG TRACE] file removed\n', interaction)
-
-                        if r.status_code == 200:
-                            with open('output.mp4', 'wb') as f:
-                                f.write(r.content)
-                            await client.log('[DEBUG TRACE] video downloaded\n', interaction)
-
-                            log_file_content = validate_file()
-                        
-                            await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', interaction)
-                            if log_file_content == "":  
-                                await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
-                            else:
-                                try:
-                                    await client.generic_output(interaction, link=link, spoilerwarning=spoilerwarning)
-                                    if header: await interaction.channel.send(header)
-                                    await interaction.channel.send(fulldesc)
-                                    await client.log('[DEBUG TRACE] file sent\n', interaction)
-                                    client.lastlink = link
-                                except discord.HTTPException as e:
-                                    if e.code == 40005:
-                                        await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
-                                        if header: await interaction.channel.send(header)
-                                        await interaction.channel.send(fulldesc)
-                                    else:
-                                        raise
-                        else:
-                            await client.log(f'[DEBUG TRACE] Request failed with status code: {r.status_code}\n', interaction)
-                            await client.handle_error(r.status_code, interaction, link=link)
             except Exception as e:
                 await client.handle_error(e, interaction, link=link)
             finally:
@@ -557,7 +614,7 @@ def register(client):
                         
                         await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', interaction)
                         if log_file_content == "":  
-                            await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                            await client.handle_large_upload(interaction, url, link, spoilerwarning=spoilerwarning)
                             await interaction.channel.send(file=discord.File('audio.wav'))
                             await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
                         else:
@@ -569,7 +626,7 @@ def register(client):
                                 await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
                             except discord.HTTPException as e:
                                 if e.code == 40005:
-                                    await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                                    await client.handle_large_upload(interaction, url, link, spoilerwarning=spoilerwarning)
                                     await interaction.channel.send(file=discord.File('audio.wav'))
                                     await client.log(f'[DEBUG TRACE] audio file sent\n', interaction)
                                 else:
@@ -787,7 +844,7 @@ def register(client):
                         
                         await client.log(f'[DEBUG TRACE] ffmpeg error log: {log_file_content}', interaction)
                         if log_file_content == "":  
-                            await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                            await client.handle_large_upload(interaction, url, link, spoilerwarning=spoilerwarning)
                             await interaction.channel.send(fulldesc)
                             await client.log(f'[DEBUG TRACE] file sent\n', interaction)
                             await interaction.channel.send(file=discord.File('audio.wav'))
@@ -803,7 +860,7 @@ def register(client):
                                 client.lastlink = link
                             except discord.HTTPException as e:
                                 if e.code == 40005:
-                                    await client.handle_large_upload(interaction, url, spoilerwarning=spoilerwarning)
+                                    await client.handle_large_upload(interaction, url, link, spoilerwarning=spoilerwarning)
                                     if header: await interaction.channel.send(header)
                                     await interaction.channel.send(fulldesc)
                                     await interaction.channel.send(file=discord.File('audio.wav'))
