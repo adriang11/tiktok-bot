@@ -106,7 +106,7 @@ def register(client):
 
                 await client.log(f'[DEBUG TRACE] No mature content detected\n', interaction)
 
-                await client.breakpoint("1 - After Pre-checks:", driver, interaction)
+                await client.breakpoint(driver, interaction)
 
                 username = await client.get_tiktok_username(driver, interaction)
                 
@@ -249,7 +249,7 @@ def register(client):
 
                 await client.log(f'[DEBUG TRACE] No mature content detected\n', interaction)
 
-                await client.breakpoint("1 - After Pre-checks:", driver, interaction)
+                await client.breakpoint(driver, interaction)
 
                 username = await client.get_tiktok_username(driver, interaction)
                                 
@@ -502,7 +502,7 @@ def register(client):
 
                 await client.log(f'[DEBUG TRACE] No mature content detected\n', interaction)
 
-                await client.breakpoint("1 - After Pre-checks:", driver, interaction)
+                await client.breakpoint(driver, interaction)
 
                 username = await client.get_tiktok_username(driver, interaction)
                                 
@@ -677,7 +677,7 @@ def register(client):
 
                 await client.log(f'[DEBUG TRACE] No mature content detected\n', interaction)
 
-                await client.breakpoint("1 - After Pre-checks:", driver, interaction)
+                await client.breakpoint(driver, interaction)
 
                 username = await client.get_tiktok_username(driver, interaction)
                                 

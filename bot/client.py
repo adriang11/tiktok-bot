@@ -125,10 +125,10 @@ class MyClient(discord.Client):
         if self.debugmode: 
             await ctx.channel.send(content)
 
-    async def breakpoint(self, driver, message):
+    async def breakpoint(self, driver, ctx):
         if self.screencap: 
             driver.get_screenshot_as_file("screenshot.png")
-            await message.channel.send(file=discord.File('screenshot.png'))
+            await ctx.channel.send(file=discord.File('screenshot.png'))
 
     async def handle_large_upload(self, ctx, cdn_url, link, spoilerwarning=False):
         self.lastlink = "" # Do not store video if large file
