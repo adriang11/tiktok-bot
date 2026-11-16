@@ -171,3 +171,51 @@ def register(client):
             await interaction.channel.send(f"Good Luck! {user.mention}")
         else:
             await interaction.channel.send(f"Good Luck! {interaction.user.mention}")
+
+    @client.tree.command(name="serverstatus", description="View bot status, known issues, and ongoing fixes.")
+    async def serverstatus_command(interaction: discord.Interaction):
+
+        embed = discord.Embed(
+            title="🤖 Bot Status & Known Issues",
+            description=(
+                "Here's the current development status of the bot. "
+                "This will be updated as issues are identified and resolved."
+            ),
+            color=discord.Color.blue()
+        )
+
+        embed.add_field(
+            name="⚠️ Known Issues",
+            value=(
+                "• TikTok photo/slideshow posts may fail to load correctly.\n"
+                "• TikTok `/withaudio` may occasionally fail to retrieve audio.\n"
+                "• Less common: video posts may time out and crash the bot (no response from /sugma).\n"
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="🔧 Currently Working On",
+            value=(
+                "• Improving TikTok photo/slideshow detection and image retrieval.\n"
+                "• Investigating audio extraction issues with TikTok posts.\n"
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="✅ Recently Fixed",
+            value=(
+                "• Fixed TikTok username detection for video links.\n"
+                "• Restored reliable TikTok video downloading.\n"
+            ),
+            inline=False
+        )
+
+        embed.set_footer(
+            text="Thanks for your patience! • Status may change as updates are deployed."
+        )
+
+        embed.timestamp = discord.utils.utcnow()
+
+        await interaction.response.send_message(embed=embed)

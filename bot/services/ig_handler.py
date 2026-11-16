@@ -12,6 +12,27 @@ from selenium.common.exceptions import TimeoutException
 
 async def handle_ig_link(client, driver, ctx, headers, spoilerwarning):
     await client.log(f'[DEBUG TRACE] Jarvis, initiate Instagram Photos protocol\n', ctx)
+
+    def get_ig_post_metadata(driver):
+        username = None
+        caption = None
+
+        try:
+            # Find username
+            username_span = driver.find_element(By.CSS_SELECTOR, 'span._ap3a')
+
+            username_link = username_span.find_element(By.XPATH, './ancestor::a[1]')
+
+            username = (username_link.get_attribute('href').rstrip('/').split('/')[-1])
+
+            caption_element = driver.find_element(By.CSS_SELECTOR, 'span.x126k92a')
+
+            caption = caption_element.text.strip()
+
+        except:
+            pass
+
+        return username, caption
     
     link = ctx.content
     
@@ -30,7 +51,21 @@ async def handle_ig_link(client, driver, ctx, headers, spoilerwarning):
 
     await client.log(f'[DEBUG TRACE] enter link\n', ctx)
 
-    await client.breakpoint("IG Snapshot 1:", driver, ctx)
+    username, caption = get_ig_post_metadata(driver)
+
+    await client.log(f'[DEBUG TRACE] IG username: {username}, caption length: {len(caption) if caption else 0}\n',ctx)
+
+    # Format the Discord message
+    ig_message = None
+
+    if username:
+        caption = ' '.join(caption.split()) if caption else ''
+
+        if len(caption) > 100:
+            caption = caption[:100].rstrip() + '... [Read more on IG]'
+
+        ig_message = (f'@{username}: ' if username else '') + caption
+        
 
     try:
         # Count the carousel indicators to determine the total number of slides
@@ -128,6 +163,9 @@ async def handle_ig_link(client, driver, ctx, headers, spoilerwarning):
             await client.log('[DEBUG TRACE] files cleared\n', ctx)
             fnum = 0
 
+        if ig_message:
+            await ctx.channel.send(ig_message)
+
     except TimeoutException as e:
             # No carousel indicators found: assume this is a single photo
             await client.log('[DEBUG TRACE] no carousel found; trying single photo\n', ctx)
@@ -151,6 +189,9 @@ async def handle_ig_link(client, driver, ctx, headers, spoilerwarning):
             r.close()
 
             await ctx.reply(file=discord.File(filename, spoiler=spoilerwarning))
+
+            if ig_message:
+                await ctx.channel.send(ig_message)
 
             os.remove(filename)
             await client.log('[DEBUG TRACE] files cleared\n', ctx)

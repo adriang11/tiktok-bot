@@ -3,7 +3,7 @@ from selenium import webdriver
 def create_driver(headers, *, block_images=False):
         options = webdriver.ChromeOptions()
 
-        options.add_argument("--headless=new")
+        # options.add_argument("--headless=new")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
@@ -15,20 +15,27 @@ def create_driver(headers, *, block_images=False):
 
         options.add_argument("--disable-background-timer-throttling")
         options.add_argument("--disable-renderer-backgrounding")
+        options.set_capability("goog:loggingPrefs",{"performance": "ALL"})
 
         options.page_load_strategy = "eager"
 
         if block_images:
-                prefs = {
-                "profile.managed_default_content_settings.images": 2
-                }
+                prefs = {"profile.managed_default_content_settings.images": 2}
                 options.add_experimental_option("prefs", prefs)
 
-        options.add_argument(f"user-agent={headers['User-Agent']}")
+        # options.add_argument(f"user-agent={headers['User-Agent']}")
 
         driver = webdriver.Chrome(options=options)
-        driver.set_page_load_timeout(25)
-        driver.execute_cdp_cmd("Network.enable", {})
+        driver.set_page_load_timeout(30)
+        driver.set_script_timeout(30)
+        driver.execute_cdp_cmd(
+                "Network.enable",
+                {
+                "maxTotalBufferSize": 50000000,
+                "maxResourceBufferSize": 10000000,
+                "maxPostDataSize": 1000000
+                }
+        )
 
         driver.execute_cdp_cmd(
         "Network.setBlockedURLs",
