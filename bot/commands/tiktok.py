@@ -438,8 +438,8 @@ def register(client):
                 )
 
                 # Send URLs as masked Discord hyperlinks
-                message = "\n".join(
-                    f"[CDN Candidate {i}](<{url}>)"
+                message = "\n\n".join(
+                    f"[CDN Candidate {i}]: \n{url}"
                     for i, url in enumerate(candidates, 1)
                 )
 
